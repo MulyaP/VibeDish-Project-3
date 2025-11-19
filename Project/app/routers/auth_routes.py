@@ -26,6 +26,7 @@ class SignupRequest(BaseModel):
     email: EmailStr
     password: str
     name: str
+    role: str
 
 
 class OwnerSignupRequest(BaseModel):
@@ -138,14 +139,14 @@ async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)):
     ins = text(
         """
         insert into users (id, email, name, role)
-        values (:uid, :email, :name, 'customer')
+        values (:uid, :email, :name, :role)
         on conflict (id) do update
         set name = excluded.name, email = excluded.email
         """
     )
     try:
 
-        await db.execute(ins, {"uid": user_id, "email": user_email, "name": payload.name})
+        await db.execute(ins, {"uid": user_id, "email": user_email, "name": payload.name, "role": payload.role})
         try:
             await db.commit()
         except Exception as e:

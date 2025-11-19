@@ -21,7 +21,7 @@ interface RestaurantDetails {
 interface AuthContextType {
   user: User | null
   login: (email: string, password: string) => Promise<void>
-  signup: (email: string, password: string, name: string) => Promise<void>
+  signup: (email: string, password: string, name: string, role: string) => Promise<void>
   ownerSignup: (email: string, password: string, name: string, restaurant: RestaurantDetails) => Promise<void>
   logout: () => Promise<void>
   isAuthenticated: boolean
@@ -50,13 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false)
   }, [])
 
-  const signup = async (email: string, password: string, name: string) => {
+  const signup = async (email: string, password: string, name: string, role:string) => {
     const response = await fetch(`${API_BASE_URL}/auth/signup`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({ email, password, name, role }),
     })
 
     if (!response.ok) {
