@@ -124,6 +124,8 @@ async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)):
             err = {"message": r.text}
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err)
 
+    print("Supabase Auth done")
+
     data = r.json()
     # Sign-up response may return either {user: {...}} or flat fields depending on GoTrue version
     user_id = data.get("id") or (data.get("user") or {}).get("id")
@@ -141,8 +143,16 @@ async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)):
         set name = excluded.name, email = excluded.email
         """
     )
-    await db.execute(ins, {"uid": user_id, "email": user_email, "name": payload.name})
-    await db.commit()
+    try:
+
+        await db.execute(ins, {"uid": user_id, "email": user_email, "name": payload.name})
+        try:
+            await db.commit()
+        except Exception as e:
+            print('Error 1: ' , e.message)
+    except Exception as e:
+        print(e.message)
+    
 
     return {"id": user_id, "email": user_email, "name": payload.name}
 

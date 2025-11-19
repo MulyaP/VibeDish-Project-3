@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # CORS
     ALLOWED_ORIGINS: List[str] = Field(
-        default_factory=lambda: ["http://localhost:5173"]
+        default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"]
     )
 
     # S3/Tigris Configuration

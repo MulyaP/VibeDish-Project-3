@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjbGV4YW1wbGUifQ.example"
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 mapboxgl.accessToken = MAPBOX_TOKEN
 
 interface Restaurant {
@@ -39,7 +39,7 @@ export function MapView({ restaurants, onRestaurantSelect }: MapViewProps) {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: [centerLng, centerLat],
+      center: [isNaN(centerLng) ? -78.6382 : centerLng, isNaN(centerLat) ? 35.7796 : centerLat],
       zoom: 12
     })
 
@@ -71,21 +71,27 @@ export function MapView({ restaurants, onRestaurantSelect }: MapViewProps) {
           ${index + 1}
         </div>
       `
-      
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([restaurant.longitude, restaurant.latitude])
-        .setPopup(
-          new mapboxgl.Popup({ offset: 25 })
-            .setHTML(`
-              <div class="p-2">
-                <p class="font-semibold">${restaurant.name}</p>
-                <p class="text-sm text-gray-600">${restaurant.address || 'No address available'}</p>
-              </div>
-            `)
-        )
-        .addTo(map.current!)
+      if (!Number.isNaN(restaurant.longitude) && !Number.isNaN(restaurant.longitude)){
+        try{
+          const marker = new mapboxgl.Marker(el)
+          .setLngLat([restaurant.longitude, restaurant.latitude])
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 })
+              .setHTML(`
+                <div class="p-2">
+                  <p class="font-semibold">${restaurant.name}</p>
+                  <p class="text-sm text-gray-600">${restaurant.address || 'No address available'}</p>
+                </div>
+              `)
+          )
+          .addTo(map.current!)
 
-      markers.current.push(marker)
+          markers.current.push(marker)
+        } catch(error : any){
+          console.log(error.message)
+        }
+        
+      }
 
       el.addEventListener('click', () => {
         setSelectedRestaurant(restaurant)
