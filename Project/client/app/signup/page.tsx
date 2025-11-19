@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useAuth } from "@/context/auth-context"
 import { useToast } from "@/hooks/use-toast"
 import { Leaf } from "lucide-react"
@@ -21,6 +22,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [role, setRole] = useState("customer")
   const { signup } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
@@ -71,7 +73,7 @@ export default function SignupPage() {
     try {
       // Hash the password before sending to backend
       const hashedPassword = await hashPasswordWithSalt(password, SALT)
-      await signup(email, hashedPassword, name)
+      await signup(email, hashedPassword, name, role)
       toast({
         title: "Success",
         description: "Account created successfully. Please login to continue.",
@@ -148,6 +150,18 @@ export default function SignupPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
             </div>
+
+            <RadioGroup value={role} onValueChange={setRole}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="customer" id="customer-option" />
+                <Label htmlFor="customer">Customer</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="delivery_driver" id="delivery-option" />
+                <Label htmlFor="delivery_driver">Delivery Driver</Label>
+              </div>
+            </RadioGroup>
+
             <Button className="w-full" onClick={handleSignup} disabled={isLoading}>
               {isLoading ? "Creating account..." : "Create Account"}
             </Button>
