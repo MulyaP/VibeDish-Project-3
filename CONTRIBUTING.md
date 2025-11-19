@@ -98,18 +98,39 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 uvicorn app.main:app --reload --port 8000
 ```
 
-**Environment Variables Required:**
+**Environment Variables Required (Global):**
 ```bash
-DATABASE_URL=postgresql+asyncpg://user:pass@host:port/dbname
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_JWT_SECRET=your_jwt_secret
-SPOTIFY_CLIENT_ID=your_spotify_client_id
-SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-GROQ_API_KEY=your_groq_api_key
-AWS_ACCESS_KEY_ID=your_aws_key  # Optional, for S3
-AWS_SECRET_ACCESS_KEY=your_aws_secret  # Optional
+#(All spotify keys needs to separate for all devs, make your spotify dev account and you can find these stuff there)
+SPOTIFY_CLIENT_ID=YOUR_SPOTIFY_CLIENT_ID
+SPOTIFY_CLIENT_SECRET=YOUR_SPOTIFY_CLIENT_SECRET
+SPOTIFY_REDIRECT_URI=YOUR_SPOTIFY_REDIRECT_URI
+SPOTIFY_SCOPES=YOUR_SPOTIFY_SCOPES
+GROQ_API_KEY=YOUR_GROQ_API_KEY
+DATABASE_URL=YOUR_DATABASE_URL #( Can be found on supabase project: Click on connect at the navbar of the project > Change the method to Transaction Pooler > Copy the URL here > Enter project password in place of [YOUR_PASSWORD] )
+# Supabase
+SUPABASE_URL=YOUR_SUPABASE_URL #( Can be found in: Supabase Project > Project Settings > Data API (from sidebar) > Copy and paste the URL found under the project URL section )
+SUPABASE_JWKS_URL=${SUPABASE_URL}/auth/v1/jwks #( leave as it is)
+SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY #( Can be found in: Supabase Project > Project Settings > API Keys (from sidebar) > Copy the Paste the first key here )
+SUPABASE_JWT_SECRET=YOUR_SUPABASE_JWT_SECRET #( Can be found in: Supabase Project > Project Settings > JWT Keys (from sidebar) > Copy the Paste the first key here )
+SUPABASE_SERVICE_ROLE_KEY= YOUR_SUPABASE_SERVICE_ROLE_KEY #( Can be found in: Supabase Project > Project Settings > API Keys (from sidebar) > Copy the Paste the second key here after clicking on reveal)
+
+# Postgres (from Supabase settings)
+DATABASE_URL=postgresql://postgres.cdjcicblecrojwyafvud:VibeDish$123@aws-1-us-east-2.pooler.supabase.com:6543/postgres #(Same as database URL above)
+ALLOWED_ORIGINS=["http://localhost:5173","http://localhost:3000"]
+
+DEV_USER_ID=00000000-0000-0000-0000-000000000001
+DEV_USER_EMAIL=alice@example.com 
+
+NEXT_PUBLIC_MAPBOX_TOKEN=YOUR_MAPBOX_TOKEN #(Make an account in Mapbox and get the key)
+NEXT_PUBLIC_API_URL="http://localhost:8000"
+HASH_SALT=HASH_SALT 
 ```
+
+**Environment Variables Required (Under client directory):**
+```bash
+NEXT_PUBLIC_MAPBOX_TOKEN=YOUR_MAPBOX_TOKEN #(Make an account in Mapbox and get the key)
+```
+
 
 ### Frontend Development
 
