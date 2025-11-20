@@ -8,7 +8,7 @@ interface User {
   id: string
   email: string
   name?: string
-  role: "customer" | "owner"
+  role: "customer" | "owner" | "delivery_driver"
 }
 
 interface RestaurantDetails {
@@ -129,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     })
     
-    let role: "customer" | "owner" = "customer"
+    let role: "customer" | "owner" | "delivery_driver" = "customer"
     if (meResponse.ok) {
       const meData = await meResponse.json()
       role = meData.role || "customer"

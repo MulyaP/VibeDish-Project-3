@@ -11,14 +11,26 @@ export function Header() {
   const { user, logout, isAuthenticated } = useAuth()
 
   const navLinks = [
-    { href: "/", label: "Home" },
-    { href: "/browse", label: "Deals" },
-    { href: "/map", label: "Map" },
+    ...(!user || user?.role === "customer" || user?.role === "owner" 
+      ? [
+          { href: "/", label: "Home" },
+          { href: "/browse", label: "Deals" },
+          { href: "/map", label: "Map" },
+        ]
+      : []
+    ),
     ...(user?.role === "owner" ? [{ href: "/owner", label: "Dashboard" }] : []),
+    ...(user?.role === "delivery_driver" ? [{ href: "/driver", label: "Driver Dashboard" }] : []),
   ]
 
   const userLinks = [
-    { href: "/cart", label: "Cart", icon: ShoppingCart },
+    ...(!user || user?.role === "customer"
+      ? [
+          { href: "/cart", label: "Cart", icon: ShoppingCart },
+        ]
+      : []
+    ),
+    // { href: "/cart", label: "Cart", icon: ShoppingCart },
     { href: "/orders", label: "Orders", icon: Package },
   ]
 
