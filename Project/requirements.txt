@@ -41,3 +41,9 @@ respx==0.21.1
 # Performance Monitoring
 psutil==5.9.8
 memory-profiler==0.61.0
+
+# Supabase Client (for database operations)
+supabase==2.3.4
+
+# Additional Testing Dependencies
+pytest-httpx==0.30.0
