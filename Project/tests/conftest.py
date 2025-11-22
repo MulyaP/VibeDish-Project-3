@@ -2,7 +2,7 @@ import os
 import pytest
 import sys
 import pathlib
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 # Set test environment variables BEFORE any imports
 os.environ.setdefault('DATABASE_URL', 'postgresql://test:test@localhost:5432/test')
@@ -14,6 +14,16 @@ os.environ.setdefault('SUPABASE_ANON_KEY', 'test-anon-key')
 # Add project root to path
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+
+# Mock Supabase client BEFORE any app imports
+mock_supabase = MagicMock()
+mock_table = MagicMock()
+for method in ['select', 'insert', 'update', 'delete', 'eq', 'neq', 'order', 'limit']:
+    setattr(mock_table, method, MagicMock(return_value=mock_table))
+mock_table.execute = MagicMock(return_value=MagicMock(data=[]))
+mock_supabase.table = MagicMock(return_value=mock_table)
+mock_supabase.auth = MagicMock()
+patch('supabase.create_client', return_value=mock_supabase).start()
 
 @pytest.fixture
 def mock_database():
