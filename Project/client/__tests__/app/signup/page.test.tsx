@@ -20,6 +20,9 @@ jest.mock('@/lib/crypto-utils', () => ({
   hashPasswordWithSalt: jest.fn(),
 }))
 
+// Mock environment variable
+process.env.HASH_SALT = 'test-salt'
+
 // Mock toast
 const mockToast = jest.fn()
 jest.mock('@/hooks/use-toast', () => ({
@@ -510,7 +513,7 @@ describe('SignupPage', () => {
       fireEvent.click(createAccountButton)
       
       await waitFor(() => {
-        expect(mockSignup).toHaveBeenCalledWith('test@example.com', 'hashedpassword123', 'John Doe')
+        expect(mockSignup).toHaveBeenCalledWith('test@example.com', 'hashedpassword123', 'John Doe', 'customer')
       })
     })
 
@@ -726,7 +729,7 @@ describe('SignupPage', () => {
       fireEvent.click(createAccountButton)
       
       await waitFor(() => {
-        expect(mockSignup).toHaveBeenCalledWith('test@example.com', 'hashedpassword123', "O'Brien")
+        expect(mockSignup).toHaveBeenCalledWith('test@example.com', 'hashedpassword123', "O'Brien", 'customer')
       })
     })
 
@@ -747,7 +750,7 @@ describe('SignupPage', () => {
       fireEvent.click(createAccountButton)
       
       await waitFor(() => {
-        expect(mockSignup).toHaveBeenCalledWith('test@mail.example.com', 'hashedpassword123', 'John Doe')
+        expect(mockSignup).toHaveBeenCalledWith('test@mail.example.com', 'hashedpassword123', 'John Doe', 'customer')
       })
     })
 
@@ -791,7 +794,7 @@ describe('SignupPage', () => {
       fireEvent.click(createAccountButton)
       
       await waitFor(() => {
-        expect(mockSignup).toHaveBeenCalledWith('test@example.com', 'hashedpassword123', longName)
+        expect(mockSignup).toHaveBeenCalledWith('test@example.com', 'hashedpassword123', longName, 'customer')
       })
     })
   })
