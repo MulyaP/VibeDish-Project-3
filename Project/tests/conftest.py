@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 # Set test environment variables BEFORE any imports
 os.environ.setdefault('DATABASE_URL', 'postgresql://test:test@localhost:5432/test')
 os.environ.setdefault('SUPABASE_URL', 'https://test.supabase.co')
+os.environ.setdefault('SUPABASE_KEY', 'test-key')
 os.environ.setdefault('SUPABASE_JWT_SECRET', 'test-secret')
 os.environ.setdefault('SUPABASE_ANON_KEY', 'test-anon-key')
 
