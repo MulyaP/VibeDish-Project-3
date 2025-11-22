@@ -14,7 +14,7 @@ databases==0.9.0
 psycopg2-binary==2.9.9
 
 # HTTP & API
-httpx==0.28.1
+httpx==0.25.2
 requests==2.32.5
 
 # S3/Object Storage
@@ -45,5 +45,3 @@ memory-profiler==0.61.0
 # Supabase Client (for database operations)
 supabase==2.3.4
 
-# Additional Testing Dependencies
-pytest-httpx==0.30.0
