@@ -1,30 +1,20 @@
 import httpx
 from fastapi import APIRouter, HTTPException, status, Depends, Header, Query
-from dotenv import load_dotenv
-from supabase import Client, create_client
 import os
 import asyncio
+from dotenv import load_dotenv
+from app.models.delivery_models import Location
+from app.db import get_db
 
-from models.delivery_models import Location
+load_dotenv()
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter()
 
-def create_supabase_client():
-    """Create and return a Supabase client"""
-    # Load environment variables
-    load_dotenv()
+MAPBOX_TOKEN = os.getenv("NEXT_PUBLIC_MAPBOX_TOKEN") or os.getenv("MAPBOX_TOKEN")
+MAX_DEST_PER_MATRIX = 24
 
-    # Get environment variables at runtime
-    project_url = os.getenv("PROJECT_URL")
-    project_key = os.getenv("API_KEY")
-
-    supabase: Client = create_client(project_url, project_key)
-    return supabase
-
-supabase = create_supabase_client()
-
-MAPBOX_TOKEN = os.environ.get("NEXT_PUBLIC_MAPBOX_TOKEN")
-MAX_DEST_PER_MATRIX = int(os.environ.get("MAX_DEST_PER_MATRIX", 24))
+if not MAPBOX_TOKEN:
+    print("WARNING: MAPBOX_TOKEN not found in environment variables")
 
 def location_from_query(
     latitude: float = Query(...), longitude: float = Query(...)
@@ -68,6 +58,10 @@ def _prepare_destinations(restaurant_ids, restaurant_coords_by_id):
 
 async def _fetch_matrix_for_chunk(src_lng, src_lat, chunk):
     """Fetch distance matrix for a chunk of destinations."""
+    if not MAPBOX_TOKEN:
+        print("ERROR: MAPBOX_TOKEN is not set")
+        return {}
+    
     coordinates = [[src_lng, src_lat]] + [[c["lng"], c["lat"]] for c in chunk]
     coordinates_str = ";".join(f"{lng},{lat}" for lng, lat in coordinates)
     destinations_idx = ";".join(str(i) for i in range(1, len(coordinates)))
@@ -79,9 +73,8 @@ async def _fetch_matrix_for_chunk(src_lng, src_lat, chunk):
         "annotations": "distance,duration",
     }
 
-    url = (
-        f"https://api.mapbox.com/directions-matrix/v1/mapbox/driving/{coordinates_str}"
-    )
+    url = f"https://api.mapbox.com/directions-matrix/v1/mapbox/driving/{coordinates_str}"
+    
     try:
         async with httpx.AsyncClient(timeout=20.0) as client:
             resp = await client.get(url, params=params)
@@ -89,6 +82,8 @@ async def _fetch_matrix_for_chunk(src_lng, src_lat, chunk):
             return resp.json()
     except httpx.HTTPError as http_err:
         print(f"HTTP error occurred while fetching matrix: {http_err}")
+        print(f"URL: {url}")
+        print(f"Params: {params}")
         return {}
 
 
@@ -164,10 +159,11 @@ def _enrich_order_with_distance(order, distance_by_restaurant, duration_by_resta
 async def fetch_ready_orders(source: Location = Depends(location_from_query)):
     """Fetch all orders that are ready for delivery"""
     try:
+        supabase = get_db()
         result = (
             supabase.from_("orders")
             .select(
-                "id, user_id, restaurant_id, restaurants(name, latitude, longitude, address), customer:user_id(name), delivery_address , delivery_fee, tip_amount, estimated_pickup_time, estimated_delivery_time, latitude, longitude, status, distance_restaurant_delivery, duration_restaurant_delivery"
+                "id, user_id, restaurant_id, restaurants(name, latitude, longitude, address), customer:user_id(name), delivery_address , delivery_fee, tip_amount, latitude, longitude, status, distance_restaurant_delivery, duration_restaurant_delivery"
             )
             .eq("status", "ready")
             .is_("delivery_user_id", None)
@@ -199,6 +195,7 @@ async def fetch_ready_orders(source: Location = Depends(location_from_query)):
         ]
 
         return enriched_orders
+        # return orders
 
     except Exception as e:
         print(f"Error fetching ready orders: {e}")

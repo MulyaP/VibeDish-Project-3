@@ -1,32 +1,26 @@
 # app/routers/me.py
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
 from ..db import get_db
 from ..auth import current_user
 
-router=APIRouter(prefix="/me",tags=["me"])
+router = APIRouter(prefix="/me", tags=["me"])
 
 @router.get("")
-async def get_me(db:AsyncSession=Depends(get_db),user=Depends(current_user)):
-    q=text("select id,email,name,role from users where id=:uid")
-    res=await db.execute(q,{"uid":user["id"]})
-    row=res.mappings().first()
-    if not row:
-        # should be rare if ensure_app_user is working
-        raise HTTPException(status_code=404,detail="user not found")
-    return dict(row)
-
+def get_me(user=Depends(current_user)):
+    supabase = get_db()
+    response = supabase.table("users").select("id,email,name,role").eq("id", user["id"]).execute()
+    if not response.data:
+        raise HTTPException(status_code=404, detail="user not found")
+    return response.data[0]
 
 @router.patch("")
-async def patch_me(payload: dict, db: AsyncSession = Depends(get_db), user=Depends(current_user)):
-    q = text("""
-      update users
-      set name = COALESCE(:name, name)
-      where id=:uid
-      returning id, email, name, role
-    """)
-    res = await db.execute(q, {"uid": user["id"], "name": payload.get("name")})
-    row = res.mappings().first()
-    await db.commit()
-    return dict(row)
+def patch_me(payload: dict, user=Depends(current_user)):
+    supabase = get_db()
+    update_data = {}
+    if payload.get("name"):
+        update_data["name"] = payload["name"]
+    
+    response = supabase.table("users").update(update_data).eq("id", user["id"]).execute()
+    if not response.data:
+        raise HTTPException(status_code=404, detail="user not found")
+    return response.data[0]

@@ -6,8 +6,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt, JWTError
 from .config import settings
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
+from .db import get_db
 
 security = HTTPBearer()
 
@@ -94,47 +93,38 @@ async def current_user(
         "source": "supabase-remote",
     }
 
-async def ensure_app_user(
-    db:AsyncSession,
+def ensure_app_user(
     *,
-    user_id:str,
-    email:str,
-    name:str|None=None,
+    user_id: str,
+    email: str,
+    name: str | None = None,
 ):
+    supabase = get_db()
+    
     # 1) try by id
-    q_by_id=text("select id from users where id=:uid")
-    res=await db.execute(q_by_id, {"uid":user_id})
-    row=res.mappings().first()
-    if row:
-        # just update basic fields
-        upd=text("""
-            update users
-            set email=:email,
-                name = coalesce(:name, name)
-            where id=:uid
-        """)
-        await db.execute(upd, {"uid":user_id,"email":email,"name":name})
+    response = supabase.table("users").select("id").eq("id", user_id).execute()
+    if response.data:
+        # update basic fields
+        update_data = {"email": email}
+        if name:
+            update_data["name"] = name
+        supabase.table("users").update(update_data).eq("id", user_id).execute()
         return
-
+    
     # 2) try by email (old row before we synced with supabase)
-    q_by_email=text("select id from users where email=:email")
-    res2=await db.execute(q_by_email, {"email":email})
-    row2=res2.mappings().first()
-    if row2:
+    response = supabase.table("users").select("id").eq("email", email).execute()
+    if response.data:
         # relink this app user to the real supabase id
-        # (this is the important part)
-        upd=text("""
-            update users
-            set id=:uid,
-                name = coalesce(:name, name)
-            where email=:email
-        """)
-        await db.execute(upd, {"uid":user_id, "email":email, "name":name})
+        update_data = {"id": user_id}
+        if name:
+            update_data["name"] = name
+        supabase.table("users").update(update_data).eq("email", email).execute()
         return
-
+    
     # 3) neither exists → clean insert
-    ins=text("""
-        insert into users (id, email, name, role)
-        values (:uid, :email, :name, 'customer')
-    """)
-    await db.execute(ins, {"uid":user_id, "email":email, "name":name})
+    supabase.table("users").insert({
+        "id": user_id,
+        "email": email,
+        "name": name,
+        "role": "customer"
+    }).execute()

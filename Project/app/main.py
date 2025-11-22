@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
-from .routers import meals, catalog, orders, debug_auth, auth_routes, me, address, cart, s3
+from .routers import meals, catalog, orders, debug_auth, auth_routes, me, address, cart, s3, delivery_routes
 from .owner_meals import router as owner_meals_router
 from .owner_meals import restaurant
 import sys
@@ -12,13 +12,13 @@ from database.database import database
 app = FastAPI(title="VibeDish API", version="0.1.0")
 
 # Database lifecycle events
-@app.on_event("startup")
-async def startup():
-    await database.connect()
+# @app.on_event("startup")
+# async def startup():
+#     await database.connect()
 
-@app.on_event("shutdown")
-async def shutdown():
-    await database.disconnect()
+# @app.on_event("shutdown")
+# async def shutdown():
+#     await database.disconnect()
 
 app.add_middleware(
     CORSMiddleware,
@@ -44,5 +44,6 @@ app.include_router(debug_auth.router, prefix="/debug", tags=["debug"])
 app.include_router(owner_meals_router.router, prefix="/owner/meals", tags=["owner-meals"])
 app.include_router(restaurant.router, prefix="/owner/restaurant", tags=["owner-restaurant"])
 app.include_router(s3.router)
+app.include_router(delivery_routes.router)
 app.include_router(spotify_router)
 app.include_router(recsys_router)

@@ -1,5 +1,6 @@
 "use client"
 
+import { redirect } from "next/dist/server/api-utils"
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "")
@@ -158,6 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             "Authorization": `Bearer ${accessToken}`,
           },
         })
+        window.location.href = "/login"
       } catch (error) {
         console.error("Logout API error:", error)
       }

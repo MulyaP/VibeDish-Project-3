@@ -7,7 +7,8 @@ from typing import List, Optional
 class Settings(BaseSettings):
     # Required
     DATABASE_URL: str = "postgresql://test:test@localhost:5432/test"
-    SUPABASE_URL: str = "https://test.supabase.co"     
+    SUPABASE_URL: str = "https://test.supabase.co"
+    SUPABASE_KEY: Optional[str] = None  # anon or service role key
 
     # Optional auth bits
     SUPABASE_JWKS_URL: Optional[str] = None   # derived if not provided
@@ -47,6 +48,10 @@ class Settings(BaseSettings):
     def _derive_fields(self):
         # Normalize SUPABASE_URL (strip trailing slash)
         self.SUPABASE_URL = self.SUPABASE_URL.rstrip("/")
+
+        # Derive SUPABASE_KEY if not provided
+        if not self.SUPABASE_KEY:
+            self.SUPABASE_KEY = self.SUPABASE_SERVICE_ROLE_KEY or self.SUPABASE_ANON_KEY
 
         # Derive JWKS URL if not provided
         if not self.SUPABASE_JWKS_URL:
