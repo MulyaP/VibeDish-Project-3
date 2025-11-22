@@ -20,6 +20,9 @@ jest.mock('@/lib/crypto-utils', () => ({
   hashPasswordWithSalt: jest.fn(),
 }))
 
+// Mock environment variable
+process.env.HASH_SALT = 'test-salt'
+
 // Mock toast
 const mockToast = jest.fn()
 jest.mock('@/hooks/use-toast', () => ({
