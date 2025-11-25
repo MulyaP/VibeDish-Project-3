@@ -20,9 +20,10 @@ interface Restaurant {
 interface MapViewProps {
   restaurants: Restaurant[]
   onRestaurantSelect?: (restaurant: Restaurant) => void
+  userLocation?: { latitude: number; longitude: number } | null
 }
 
-export function MapView({ restaurants, onRestaurantSelect }: MapViewProps) {
+export function MapView({ restaurants, onRestaurantSelect, userLocation }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const markers = useRef<mapboxgl.Marker[]>([])
@@ -62,12 +63,33 @@ export function MapView({ restaurants, onRestaurantSelect }: MapViewProps) {
     markers.current.forEach(marker => marker.remove())
     markers.current = []
 
+    // Add user location marker
+    if (userLocation) {
+      const userEl = document.createElement('div')
+      userEl.className = 'marker'
+      userEl.innerHTML = `
+        <div class="w-10 h-10 rounded-full border-3 border-white shadow-lg flex items-center justify-center bg-blue-500 hover:scale-110 transition-transform">
+          <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+          </svg>
+        </div>
+      `
+      const userMarker = new mapboxgl.Marker(userEl)
+        .setLngLat([userLocation.longitude, userLocation.latitude])
+        .setPopup(
+          new mapboxgl.Popup({ offset: 25 })
+            .setHTML(`<div class="p-2"><p class="font-semibold">Your Location</p></div>`)
+        )
+        .addTo(map.current!)
+      markers.current.push(userMarker)
+    }
+
     // Add new markers
     restaurants.forEach((restaurant, index) => {
       const el = document.createElement('div')
       el.className = 'marker'
       el.innerHTML = `
-        <div class="w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-xs font-bold text-white bg-green-500 hover:scale-110 transition-transform cursor-pointer">
+        <div class="w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-xs font-bold text-white bg-red-500 hover:scale-110 transition-transform cursor-pointer">
           ${index + 1}
         </div>
       `
