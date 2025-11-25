@@ -482,6 +482,22 @@ export async function updateOrderStatus(orderId: string, status: string) {
   return response.json()
 }
 
+/**
+ * Accept a delivery order (for drivers)
+ */
+export async function acceptDeliveryOrder(orderId: string) {
+  const response = await authenticatedFetch(`${API_BASE_URL}/deliveries/${orderId}/accept`, {
+    method: "PATCH",
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || "Failed to accept delivery order")
+  }
+  
+  return response.json()
+}
+
 // ==================== S3 / CDN API ====================
 
 /**

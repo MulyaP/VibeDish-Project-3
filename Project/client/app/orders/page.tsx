@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Package, Loader2, ChevronDown, ChevronUp, Clock, CheckCircle2, XCircle, ChefHat, PackageCheck } from "lucide-react"
+import { Package, Loader2, ChevronDown, ChevronUp, Clock, CheckCircle2, XCircle, ChefHat, PackageCheck, Truck } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { getMyOrders, getOrder, getOrderStatus, cancelOrder } from "@/lib/api"
 import { format } from "date-fns"
@@ -26,6 +26,9 @@ import {
 interface Order {
   id: string
   restaurant_id: string
+  restaurants: {
+    name: string
+  }
   status: string
   total: number
   created_at: string
@@ -44,7 +47,9 @@ interface OrderDetails {
     id: string
     user_id: string
     restaurant_id: string
-    restaurant_name: string
+    restaurants: {
+      name: string
+    }
     status: string
     total: number
     created_at: string
@@ -87,6 +92,24 @@ const STATUS_CONFIG = {
     color: "bg-green-500",
     variant: "default" as const,
   },
+  assigned: {
+    label: "Assigned",
+    icon: Truck,
+    color: "bg-blue-600",
+    variant: "default" as const,
+  },
+  "out-for-delivery": {
+    label: "Out for Delivery",
+    icon: Truck,
+    color: "bg-indigo-500",
+    variant: "default" as const,
+  },
+  delivered: {
+    label: "Delivered",
+    icon: CheckCircle2,
+    color: "bg-green-600",
+    variant: "default" as const,
+  },
   completed: {
     label: "Completed",
     icon: CheckCircle2,
@@ -97,6 +120,12 @@ const STATUS_CONFIG = {
     label: "Cancelled",
     icon: XCircle,
     color: "bg-red-500",
+    variant: "destructive" as const,
+  },
+  rejected: {
+    label: "Rejected",
+    icon: XCircle,
+    color: "bg-red-600",
     variant: "destructive" as const,
   },
 }
@@ -307,7 +336,7 @@ export default function OrdersPage() {
                         </Badge>
                       </div>
                       <CardDescription>
-                        Placed on {formatShortDate(order.created_at)}
+                        {order.restaurants?.name} • Placed on {formatShortDate(order.created_at)}
                       </CardDescription>
                     </div>
                     <div className="text-right space-y-1">
@@ -387,7 +416,7 @@ export default function OrdersPage() {
                         {/* Restaurant Info */}
                         <div>
                           <h3 className="font-semibold mb-2">Restaurant</h3>
-                          <p className="text-muted-foreground">{details.order.restaurant_name}</p>
+                          <p className="text-muted-foreground">{details.order.restaurants?.name || 'N/A'}</p>
                         </div>
 
                         <Separator />

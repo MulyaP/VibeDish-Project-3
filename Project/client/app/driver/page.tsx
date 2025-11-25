@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MapView } from "@/components/map-view"
-import { MapPin, Clock, Package, Navigation, Phone, User } from "lucide-react"
+import { MapPin, Package, User } from "lucide-react"
+import { acceptDeliveryOrder } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
 
 interface ReadyOrder {
   id: string
@@ -97,26 +98,11 @@ interface ReadyOrder {
 //   }
 // ]
 
-// Dummy data for active orders
-const dummyActiveOrders = [
-  {
-    id: "active-1",
-    restaurantName: "Thai Garden",
-    customerName: "Alice Williams",
-    customerAddress: "111 Cherry St, Raleigh, NC 27607",
-    customerPhone: "(919) 555-0321",
-    orderTotal: 28.50,
-    status: "picked_up",
-    pickedUpAt: "2:30 PM",
-    estimatedDelivery: "2:50 PM",
-    items: ["Pad Thai", "Spring Rolls", "Thai Iced Tea"],
-  },
-]
-
 export default function DriverPage() {
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null)
   const [readyOrders, setReadyOrders] = useState<ReadyOrder[]>([])
+  const { toast } = useToast()
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -170,125 +156,31 @@ export default function DriverPage() {
     longitude: order.restaurants.longitude,
   }))
 
-  const handleAcceptOrder = (orderId: string) => {
-    // TODO: Implement order acceptance logic
-    console.log("Accepting order:", orderId)
+  const handleAcceptOrder = async (orderId: string) => {
+    try {
+      await acceptDeliveryOrder(orderId)
+      setReadyOrders(prev => prev.filter(order => order.id !== orderId))
+      toast({
+        title: "Order Accepted",
+        description: "You have successfully accepted the delivery order.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to accept order",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
     <div className="container py-8 space-y-8">
-      {/* Page Header */}
       <div className="space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight">Delivery Driver Dashboard</h1>
+        <h1 className="text-4xl font-bold tracking-tight">Nearby Ready Orders</h1>
         <p className="text-lg text-muted-foreground">
-          View nearby ready orders and manage your active deliveries
+          {readyOrders.length} orders available for pickup
         </p>
       </div>
-
-      {/* Active Orders Section */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-semibold">Active Orders</h2>
-          <p className="text-sm text-muted-foreground">
-            Orders you are currently delivering
-          </p>
-        </div>
-
-        {dummyActiveOrders.length === 0 ? (
-          <Card className="border-2 border-dashed">
-            <CardContent className="py-12 text-center">
-              <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-lg font-medium mb-2">No Active Orders</p>
-              <p className="text-sm text-muted-foreground">
-                Accept an order from the nearby ready orders section to get started
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {dummyActiveOrders.map((order) => (
-              <Card key={order.id} className="border-2 border-primary/50">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg">{order.restaurantName}</CardTitle>
-                      <CardDescription>Order #{order.id}</CardDescription>
-                    </div>
-                    <Badge variant="default" className="ml-2">
-                      {order.status === "picked_up" ? "In Transit" : "Picking Up"}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{order.customerName}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      <span>{order.customerAddress}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Phone className="h-4 w-4" />
-                      <span>{order.customerPhone}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Order Items:</p>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      {order.items.map((item, idx) => (
-                        <li key={idx} className="flex items-center gap-2">
-                          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="space-y-2 pt-2 border-t">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Picked Up:</span>
-                      <span className="font-medium">{order.pickedUpAt}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Est. Delivery:</span>
-                      <span className="font-medium">{order.estimatedDelivery}</span>
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Total</p>
-                        <p className="text-lg font-semibold">${order.orderTotal.toFixed(2)}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <Navigation className="h-4 w-4 mr-2" />
-                          Navigate
-                        </Button>
-                        <Button size="sm">
-                          Mark Delivered
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Nearby Ready Orders Section */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold">Nearby Ready Orders</h2>
-            <p className="text-sm text-muted-foreground">
-              {readyOrders.length} orders available for pickup
-            </p>
-          </div>
-        </div>
 
         <Tabs defaultValue="map" className="w-full">
           <TabsList>
@@ -401,10 +293,7 @@ export default function DriverPage() {
               })}
             </div>
           </TabsContent>
-        </Tabs>
-      </section>
-
-      
+      </Tabs>
     </div>
   )
 }
