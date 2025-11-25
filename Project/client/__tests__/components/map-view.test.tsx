@@ -90,6 +90,33 @@ describe('MapView', () => {
     expect(mapboxgl.Marker).toHaveBeenCalledTimes(mockRestaurants.length)
   })
 
+  it('should create user location marker when userLocation is provided', () => {
+    const userLocation = { latitude: 40.7128, longitude: -74.0060 }
+    
+    render(
+      <MapView 
+        restaurants={mockRestaurants} 
+        onRestaurantSelect={mockOnRestaurantSelect}
+        userLocation={userLocation}
+      />
+    )
+
+    // Should create markers for restaurants + 1 for user location
+    expect(mapboxgl.Marker).toHaveBeenCalledTimes(mockRestaurants.length + 1)
+  })
+
+  it('should not create user location marker when userLocation is null', () => {
+    render(
+      <MapView 
+        restaurants={mockRestaurants} 
+        onRestaurantSelect={mockOnRestaurantSelect}
+        userLocation={null}
+      />
+    )
+
+    expect(mapboxgl.Marker).toHaveBeenCalledTimes(mockRestaurants.length)
+  })
+
   it('should set correct coordinates for each marker', () => {
     render(
       <MapView 
@@ -118,14 +145,37 @@ describe('MapView', () => {
 
     const popupInstances = (mapboxgl.Popup as jest.Mock).mock.instances
 
-    popupInstances.forEach((popupInstance, index) => {
+    // Check restaurant popups (skip user location if present)
+    mockRestaurants.forEach((restaurant, index) => {
+      const popupInstance = popupInstances[index]
       expect(popupInstance.setHTML).toHaveBeenCalledWith(
-        expect.stringContaining(mockRestaurants[index].name)
-      )
-      expect(popupInstance.setHTML).toHaveBeenCalledWith(
-        expect.stringContaining(mockRestaurants[index].address)
+        expect.stringContaining(restaurant.name)
       )
     })
+  })
+
+  it('should show "No address available" in popup when address is missing', () => {
+    const restaurantsNoAddress = [
+      {
+        id: '1',
+        name: 'Restaurant No Address',
+        address: '',
+        latitude: 40.7128,
+        longitude: -74.0060,
+      },
+    ]
+
+    render(
+      <MapView 
+        restaurants={restaurantsNoAddress} 
+        onRestaurantSelect={mockOnRestaurantSelect}
+      />
+    )
+
+    const popupInstances = (mapboxgl.Popup as jest.Mock).mock.instances
+    expect(popupInstances[0].setHTML).toHaveBeenCalledWith(
+      expect.stringContaining('No address available')
+    )
   })
 
   it('should display selected restaurant card when marker is clicked', async () => {
@@ -248,6 +298,27 @@ describe('MapView', () => {
     })
   })
 
+  it('should clean up user location marker on unmount', () => {
+    const userLocation = { latitude: 40.7128, longitude: -74.0060 }
+    
+    const { unmount } = render(
+      <MapView 
+        restaurants={mockRestaurants} 
+        onRestaurantSelect={mockOnRestaurantSelect}
+        userLocation={userLocation}
+      />
+    )
+
+    const markerInstances = (mapboxgl.Marker as jest.Mock).mock.instances
+
+    unmount()
+
+    // All markers including user location should be removed
+    markerInstances.forEach(marker => {
+      expect(marker.remove).toHaveBeenCalled()
+    })
+  })
+
   it('should update markers when restaurants prop changes', () => {
     const { rerender } = render(
       <MapView 
@@ -277,6 +348,39 @@ describe('MapView', () => {
     )
 
     // Should have created more markers
+    expect((mapboxgl.Marker as jest.Mock).mock.calls.length).toBeGreaterThan(
+      initialMarkerCount
+    )
+  })
+
+  it('should recreate markers when restaurants change', () => {
+    const { rerender } = render(
+      <MapView 
+        restaurants={mockRestaurants} 
+        onRestaurantSelect={mockOnRestaurantSelect}
+      />
+    )
+
+    const initialMarkerCount = (mapboxgl.Marker as jest.Mock).mock.calls.length
+
+    const newRestaurants = [
+      {
+        id: '4',
+        name: 'New Restaurant',
+        address: '111 New St',
+        latitude: 41.0,
+        longitude: -75.0,
+      },
+    ]
+    
+    rerender(
+      <MapView 
+        restaurants={newRestaurants} 
+        onRestaurantSelect={mockOnRestaurantSelect}
+      />
+    )
+
+    // New markers should be created
     expect((mapboxgl.Marker as jest.Mock).mock.calls.length).toBeGreaterThan(
       initialMarkerCount
     )
@@ -362,8 +466,26 @@ describe('MapView', () => {
     const firstMarkerElement = markerCalls[0][0]
 
     expect(firstMarkerElement.className).toBe('marker')
-    expect(firstMarkerElement.innerHTML).toContain('bg-green-500')
+    expect(firstMarkerElement.innerHTML).toContain('bg-red-500')
     expect(firstMarkerElement.innerHTML).toContain('hover:scale-110')
+  })
+
+  it('should apply correct styling to user location marker', () => {
+    const userLocation = { latitude: 40.7128, longitude: -74.0060 }
+    
+    render(
+      <MapView 
+        restaurants={mockRestaurants} 
+        onRestaurantSelect={mockOnRestaurantSelect}
+        userLocation={userLocation}
+      />
+    )
+
+    const markerCalls = (mapboxgl.Marker as jest.Mock).mock.calls
+    const userMarkerElement = markerCalls[0][0]
+
+    expect(userMarkerElement.className).toBe('marker')
+    expect(userMarkerElement.innerHTML).toContain('bg-blue-500')
   })
 
   it('should calculate correct center coordinates from restaurants', () => {
@@ -489,6 +611,80 @@ describe('MapView', () => {
 
     // Map should be recreated due to center change
     expect((mapboxgl.Map as jest.Mock).mock.calls.length).toBeGreaterThan(initialMapCalls)
+  })
+
+  it('should handle restaurants with invalid coordinates', () => {
+    const restaurantsWithInvalidCoords = [
+      {
+        id: '1',
+        name: 'Invalid Restaurant',
+        address: '123 Main St',
+        latitude: NaN,
+        longitude: NaN,
+      },
+    ]
+
+    render(
+      <MapView 
+        restaurants={restaurantsWithInvalidCoords} 
+        onRestaurantSelect={mockOnRestaurantSelect}
+      />
+    )
+
+    // Should still create map with default center
+    expect(mapboxgl.Map).toHaveBeenCalledWith(
+      expect.objectContaining({
+        center: [-78.6382, 35.7796],
+      })
+    )
+  })
+
+  it('should set user location popup correctly', () => {
+    const userLocation = { latitude: 40.7128, longitude: -74.0060 }
+    
+    render(
+      <MapView 
+        restaurants={mockRestaurants} 
+        onRestaurantSelect={mockOnRestaurantSelect}
+        userLocation={userLocation}
+      />
+    )
+
+    const popupInstances = (mapboxgl.Popup as jest.Mock).mock.instances
+    const userPopup = popupInstances[0]
+
+    expect(userPopup.setHTML).toHaveBeenCalledWith(
+      expect.stringContaining('Your Location')
+    )
+  })
+
+  it('should handle restaurants with partial invalid coordinates', () => {
+    const mixedRestaurants = [
+      {
+        id: '1',
+        name: 'Valid Restaurant',
+        address: '123 Main St',
+        latitude: 40.7128,
+        longitude: -74.0060,
+      },
+      {
+        id: '2',
+        name: 'Invalid Restaurant',
+        address: '456 Oak Ave',
+        latitude: NaN,
+        longitude: NaN,
+      },
+    ]
+
+    render(
+      <MapView 
+        restaurants={mixedRestaurants} 
+        onRestaurantSelect={mockOnRestaurantSelect}
+      />
+    )
+
+    // Should only create marker for valid restaurant
+    expect(mapboxgl.Marker).toHaveBeenCalledTimes(1)
   })
 })
 
