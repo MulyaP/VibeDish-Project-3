@@ -5,6 +5,7 @@ import asyncio
 from dotenv import load_dotenv
 from app.models.delivery_models import Location
 from app.db import get_db
+from app.auth import current_user
 
 load_dotenv()
 
@@ -62,14 +63,15 @@ async def _fetch_matrix_for_chunk(src_lng, src_lat, chunk):
         print("ERROR: MAPBOX_TOKEN is not set")
         return {}
     
+    if not chunk:
+        return {}
+    
     coordinates = [[src_lng, src_lat]] + [[c["lng"], c["lat"]] for c in chunk]
     coordinates_str = ";".join(f"{lng},{lat}" for lng, lat in coordinates)
-    destinations_idx = ";".join(str(i) for i in range(1, len(coordinates)))
-
+    
     params = {
         "access_token": MAPBOX_TOKEN,
         "sources": "0",
-        "destinations": destinations_idx,
         "annotations": "distance,duration",
     }
 
@@ -82,8 +84,6 @@ async def _fetch_matrix_for_chunk(src_lng, src_lat, chunk):
             return resp.json()
     except httpx.HTTPError as http_err:
         print(f"HTTP error occurred while fetching matrix: {http_err}")
-        print(f"URL: {url}")
-        print(f"Params: {params}")
         return {}
 
 
@@ -108,12 +108,12 @@ async def _compute_distances_and_durations(src_lng, src_lat, dests):
         durations_matrix = chunk_result.get("durations")
 
         distances_from_source = (
-            distances_matrix[0]
+            distances_matrix[0][1:]
             if distances_matrix and len(distances_matrix) > 0
             else [None] * len(chunk)
         )
         durations_from_source = (
-            durations_matrix[0]
+            durations_matrix[0][1:]
             if durations_matrix and len(durations_matrix) > 0
             else [None] * len(chunk)
         )
@@ -200,3 +200,63 @@ async def fetch_ready_orders(source: Location = Depends(location_from_query)):
     except Exception as e:
         print(f"Error fetching ready orders: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch ready orders")
+
+@router.get("/deliveries/active", response_model=list)
+async def fetch_active_orders(user = Depends(current_user)):
+    """Fetch active delivery orders for the current driver"""
+    try:
+        supabase = get_db()
+        result = (
+            supabase.from_("orders")
+            .select(
+                "id, user_id, restaurant_id, restaurants(name, address, latitude, longitude), customer:user_id(name), delivery_address, delivery_fee, tip_amount, total, status, created_at, latitude, longitude"
+            )
+            .eq("delivery_user_id", user["id"])
+            .in_("status", ["assigned", "out-for-delivery"])
+            .execute()
+        )
+        return result.data or []
+    except Exception as e:
+        print(f"Error fetching active orders: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch active orders")
+
+@router.patch("/deliveries/{order_id}/accept")
+async def accept_delivery_order(order_id: str, user = Depends(current_user)):
+    """Accept a delivery order and assign it to the driver"""
+    try:
+        supabase = get_db()
+        
+        # Check if driver already has an active order
+        active_orders = supabase.table("orders").select("id").eq("delivery_user_id", user["id"]).in_("status", ["assigned", "out-for-delivery"]).execute()
+        if active_orders.data:
+            raise HTTPException(status_code=400, detail="You already have an active delivery order")
+        
+        order_response = supabase.table("orders").select("*").eq("id", order_id).execute()
+        if not order_response.data:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
+        order = order_response.data[0]
+        if order["status"] != "ready":
+            raise HTTPException(status_code=400, detail="Order is not ready for delivery")
+        
+        if order["delivery_user_id"] is not None:
+            raise HTTPException(status_code=400, detail="Order already assigned to another driver")
+        
+        supabase.table("orders").update({
+            "delivery_user_id": user["id"],
+            "status": "assigned"
+        }).eq("id", order_id).execute()
+        
+        supabase.table("order_status_events").insert({
+            "order_id": order_id,
+            "status": "assigned"
+        }).execute()
+        
+        updated = supabase.table("orders").select("*").eq("id", order_id).execute()
+        return updated.data[0]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error accepting delivery order: {e}")
+        raise HTTPException(status_code=500, detail="Failed to accept delivery order")

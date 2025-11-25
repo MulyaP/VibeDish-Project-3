@@ -20,7 +20,7 @@ export function Header() {
       : []
     ),
     ...(user?.role === "owner" ? [{ href: "/owner", label: "Dashboard" }, { href: "/owner/orders", label: "Orders" }] : []),
-    ...(user?.role === "delivery_driver" ? [{ href: "/driver", label: "Driver Dashboard" }] : []),
+    ...(user?.role === "delivery_driver" ? [{ href: "/driver", label: "Nearby Orders" }, {href: '/driver/active', label: "Active Order"}] : []),
   ]
 
   const userLinks = [
