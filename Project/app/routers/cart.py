@@ -1,8 +1,13 @@
 # app/routers/cart.py
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from typing import Dict, Any
+import requests
+import os
 from ..db import get_db
 from ..auth import current_user
+from dotenv import load_dotenv
+
+load_dotenv()
 
 router = APIRouter(prefix="/cart", tags=["cart"])
 
@@ -14,6 +19,48 @@ def _get_or_create_cart_id(user_id: str) -> str:
     
     response = supabase.table("carts").insert({"user_id": user_id}).execute()
     return response.data[0]["id"]
+
+def _get_restaurant_location(restaurant_id: str) -> Dict[str, float]:
+    supabase = get_db()
+    response = supabase.table("restaurants").select("latitude, longitude").eq("id", restaurant_id).execute()
+    if not response.data:
+        raise HTTPException(status_code=404, detail="restaurant not found")
+    return {"latitude": float(response.data[0]["latitude"]), "longitude": float(response.data[0]["longitude"])}
+
+def _get_distance_and_duration(origin_lat: float, origin_lng: float, dest_lat: float, dest_lng: float) -> Dict[str, float]:
+    """Get distance (in miles) and duration (in minutes) between two points using Mapbox Directions API"""
+    mapbox_token = os.getenv("MAPBOX_TOKEN")
+    if not mapbox_token:
+        raise HTTPException(status_code=500, detail="Mapbox token not configured")
+    
+    url = f"https://api.mapbox.com/directions/v5/mapbox/driving/{origin_lng},{origin_lat};{dest_lng},{dest_lat}"
+    params = {
+        "access_token": mapbox_token,
+        "geometries": "geojson"
+    }
+    
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        if not data.get("routes"):
+            raise HTTPException(status_code=400, detail="No route found between locations")
+        
+        route = data["routes"][0]
+        distance_meters = route["distance"]
+        duration_seconds = route["duration"]
+        
+        # Convert to miles and minutes
+        distance_miles = distance_meters / 1609.34
+        duration_minutes = duration_seconds / 60
+        
+        return {
+            "distance_miles": round(distance_miles, 2),
+            "duration_minutes": round(duration_minutes, 1)
+        }
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get directions: {str(e)}")
 
 def _get_cart_payload(cart_id: str) -> Dict[str, Any]:
     supabase = get_db()
@@ -104,7 +151,17 @@ def clear_cart(user=Depends(current_user)):
     return _get_cart_payload(cart_id)
 
 @router.post("/checkout")
-def checkout_cart(user=Depends(current_user)):
+def checkout_cart(payload: dict, user=Depends(current_user)):
+    delivery_address = payload.get("delivery_address")
+    latitude = payload.get("latitude")
+    longitude = payload.get("longitude")
+    tax = payload.get("tax")
+    tip_amount = payload.get("tip_amount")
+    total = payload.get("total")
+    delivery_fee = payload.get("delivery_fee")
+    
+    if not delivery_address or latitude is None or longitude is None:
+        raise HTTPException(status_code=400, detail="delivery_address, latitude, and longitude are required")
     supabase = get_db()
     cart_id = _get_or_create_cart_id(user["id"])
     
@@ -117,7 +174,18 @@ def checkout_cart(user=Depends(current_user)):
         raise HTTPException(status_code=400, detail="cart contains items from multiple restaurants")
     restaurant_id = list(rest_ids)[0]
     
-    total = 0.0
+    # Get restaurant location
+    restaurant_location = _get_restaurant_location(restaurant_id)
+    
+    # Get distance and duration from restaurant to delivery location
+    route_info = _get_distance_and_duration(
+        restaurant_location["latitude"],
+        restaurant_location["longitude"],
+        latitude,
+        longitude
+    )
+    
+    # total = 0.0
     for item in items_response.data:
         meal = item["meals"]
         is_surplus = meal.get("surplus_price") and meal.get("quantity")
@@ -129,14 +197,22 @@ def checkout_cart(user=Depends(current_user)):
         else:
             price_per_item = float(meal["base_price"])
         
-        total += price_per_item * int(item["qty"])
+        # total += price_per_item * int(item["qty"])
     
     order_response = supabase.table("orders").insert({
         "user_id": user["id"],
         "restaurant_id": restaurant_id,
         "status": "pending",
         "total": total,
-        "delivery_user_id": None
+        "delivery_user_id": None,
+        "delivery_address": delivery_address,
+        "latitude": latitude,
+        "longitude": longitude,
+        "tax": tax,
+        "tip_amount": tip_amount,
+        "delivery_fee": delivery_fee,
+        "distance_restaurant_delivery" : route_info["distance_miles"],
+        "duration_restaurant_delivery" : route_info["duration_minutes"]
     }).execute()
     order_id = order_response.data[0]["id"]
     

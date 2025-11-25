@@ -418,7 +418,7 @@ def test_checkout_cart():
     with mock_authenticated_user():
         mock_supabase = MagicMock()
         items = [{"id": "item1", "meal_id": "meal1", "qty": 2, "meals": {"name": "Test", "surplus_price": 5.99, "base_price": 9.99, "restaurant_id": "r1", "quantity": 10}}]
-        responses = {"carts": MagicMock(data=[{"id": "cart1"}]), "cart_items": MagicMock(data=items), "orders": MagicMock(data=[{"id": "order1"}]), "meals": MagicMock(data=[{"quantity": 10}])}
+        responses = {"carts": MagicMock(data=[{"id": "cart1"}]), "cart_items": MagicMock(data=items), "orders": MagicMock(data=[{"id": "order1"}]), "meals": MagicMock(data=[{"quantity": 10}]), "restaurants": MagicMock(data=[{"latitude": 35.7796, "longitude": -78.6382}])}
         
         def table_mock(name):
             mock_table = MagicMock()
@@ -428,9 +428,9 @@ def test_checkout_cart():
             return mock_table
         
         mock_supabase.table.side_effect = table_mock
-        with patch('app.routers.cart.get_db', return_value=mock_supabase), patch('app.db.get_db', return_value=mock_supabase):
+        with patch('app.routers.cart.get_db', return_value=mock_supabase), patch('app.db.get_db', return_value=mock_supabase), patch('app.routers.cart._get_distance_and_duration', return_value={"distance_miles": 5.0, "duration_minutes": 10.0}):
             client = get_test_client()
-            response = client.post("/cart/checkout", headers={"Authorization": "Bearer token123"})
+            response = client.post("/cart/checkout", json={"delivery_address": "123 Main St", "latitude": 35.7796, "longitude": -78.6382, "tax": 1.0, "tip_amount": 2.0, "total": 15.0, "delivery_fee": 4.0}, headers={"Authorization": "Bearer token123"})
             assert_and_log(response, [200, 400, 500], "Checkout cart")
 
 # -------- COMPREHENSIVE GET /cart TESTS --------
@@ -547,7 +547,7 @@ def test_update_item_exceeds_inventory():
 def test_checkout_empty_cart():
     """Test checking out empty cart returns 400"""
     with mock_cart_operation([{"id": "cart1"}], []) as client:
-        response = client.post("/cart/checkout", headers={"Authorization": "Bearer token123"})
+        response = client.post("/cart/checkout", json={"delivery_address": "123 Main St", "latitude": 35.7796, "longitude": -78.6382, "tax": 1.0, "tip_amount": 2.0, "total": 15.0, "delivery_fee": 4.0}, headers={"Authorization": "Bearer token123"})
         assert response.status_code == 400
         assert "cart is empty" in response.json()["detail"]
         print("Checkout empty cart test passed")

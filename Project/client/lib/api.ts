@@ -1,5 +1,6 @@
 // API utilities for making authenticated requests
 import { authenticatedFetch } from "@/context/auth-context"
+// import { json } from "stream/consumers"
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "")
 
@@ -146,9 +147,18 @@ export async function clearCart() {
 /**
  * Checkout cart (creates order)
  */
-export async function checkoutCart() {
+export async function checkoutCart(checkoutBody : any) {
   const response = await authenticatedFetch(`${API_BASE_URL}/cart/checkout`, {
     method: "POST",
+    body: JSON.stringify({ 
+      delivery_address: checkoutBody.deliveryAddress, 
+      latitude : checkoutBody.latitude,
+      longitude : checkoutBody.longitude,
+      tip_amount : checkoutBody.tipAmount,
+      total: checkoutBody.total,
+      delivery_fee: checkoutBody.deliveryFee,
+      tax: checkoutBody.tax
+    })
   })
   
   if (!response.ok) {
@@ -440,6 +450,36 @@ export async function deleteMeal(mealId: string) {
   }
   
   return true
+}
+
+/**
+ * Get orders for owner's restaurant
+ */
+export async function getOwnerOrders() {
+  const response = await authenticatedFetch(`${API_BASE_URL}/owner/orders`)
+  
+  if (!response.ok) {
+    throw new Error("Failed to fetch owner orders")
+  }
+  
+  return response.json()
+}
+
+/**
+ * Update order status
+ */
+export async function updateOrderStatus(orderId: string, status: string) {
+  const response = await authenticatedFetch(`${API_BASE_URL}/owner/orders/${orderId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || "Failed to update order status")
+  }
+  
+  return response.json()
 }
 
 // ==================== S3 / CDN API ====================

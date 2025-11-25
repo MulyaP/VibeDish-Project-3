@@ -124,15 +124,28 @@ def test_checkout_multiple_restaurants():
     """Test checkout with items from different restaurants"""
     with mock_authenticated_user():
         mock_supabase = MagicMock()
-        cart_items = [
-            {"id": "item1", "meal_id": "m1", "qty": 1, "meals": {"restaurant_id": "r1", "surplus_price": 5.99, "quantity": 10}},
-            {"id": "item2", "meal_id": "m2", "qty": 1, "meals": {"restaurant_id": "r2", "surplus_price": 7.99, "quantity": 5}}
-        ]
-        mock_supabase.table.return_value.select.return_value.eq.return_value.execute.return_value = MagicMock(data=cart_items)
+        
+        def table_mock(name):
+            mock_table = MagicMock()
+            mock_table.select.return_value = mock_table
+            mock_table.eq.return_value = mock_table
+            if name == "carts":
+                mock_table.execute.return_value = MagicMock(data=[{"id": "cart1"}])
+            elif name == "cart_items":
+                cart_items = [
+                    {"id": "item1", "meal_id": "m1", "qty": 1, "meals": {"restaurant_id": "r1", "surplus_price": 5.99, "quantity": 10}},
+                    {"id": "item2", "meal_id": "m2", "qty": 1, "meals": {"restaurant_id": "r2", "surplus_price": 7.99, "quantity": 5}}
+                ]
+                mock_table.execute.return_value = MagicMock(data=cart_items)
+            else:
+                mock_table.execute.return_value = MagicMock(data=[])
+            return mock_table
+        
+        mock_supabase.table.side_effect = table_mock
         
         with patch('app.routers.cart.get_db', return_value=mock_supabase):
             client = get_test_client()
-            response = client.post("/cart/checkout", headers={"Authorization": "Bearer token123"})
+            response = client.post("/cart/checkout", json={"delivery_address": "123 St", "latitude": 35.7796, "longitude": -78.6382, "total": 13.98}, headers={"Authorization": "Bearer token123"})
             assert response.status_code == 400
 
 # ============ Orders Edge Cases ============

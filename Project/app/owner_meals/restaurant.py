@@ -1,23 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from .auth import require_owner
-from database.database import database
+from ..db import get_db
 
 router = APIRouter()
 
 @router.get("")
 async def get_my_restaurant(user: dict = Depends(require_owner)):
     try:
-        q = """
-            SELECT name, address
-            FROM restaurants
-            WHERE owner_id = :user_id
-        """
-        row = await database.fetch_one(q, {"user_id": user["id"]})
+        db = get_db()
+        result = db.table("restaurants").select("name, address").eq("owner_id", user["id"]).execute()
         
-        if not row:
+        if not result.data:
             raise HTTPException(status_code=404, detail="No restaurant found for this owner")
          
-        return dict(row)
+        return result.data[0]
     
     except HTTPException:
         raise
