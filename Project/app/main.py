@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
-from .routers import meals, catalog, orders, debug_auth, auth_routes, me, address, cart, s3, delivery_routes, owner_orders
+from .routers import meals, catalog, orders, debug_auth, auth_routes, me, address, cart, s3, delivery_routes, owner_orders, chat
 from .owner_meals import router as owner_meals_router
 from .owner_meals import restaurant
 import sys
@@ -46,5 +46,6 @@ app.include_router(restaurant.router, prefix="/owner/restaurant", tags=["owner-r
 app.include_router(owner_orders.router, prefix="/owner/orders", tags=["owner-orders"])
 app.include_router(s3.router)
 app.include_router(delivery_routes.router)
+app.include_router(chat.router, prefix="/chat", tags=["chat"])
 app.include_router(spotify_router)
 app.include_router(recsys_router)
