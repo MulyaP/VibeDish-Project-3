@@ -16,11 +16,15 @@ export default function SessionList({
   selectedId,
   onSelect,
   onCreate,
+  onRename,
+  onDelete,
 }: {
   sessions: Session[]
   selectedId?: string | null
   onSelect: (id: string) => void
   onCreate: () => void
+  onRename?: (id: string, title?: string) => void
+  onDelete?: (id: string) => void
 }) {
   return (
     <aside className="w-72 border-r bg-gray-50 h-[600px] overflow-auto">
@@ -33,16 +37,40 @@ export default function SessionList({
           <div className="p-4 text-sm text-muted-foreground">No conversations yet</div>
         )}
         {sessions.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => onSelect(s.id)}
-            className={`w-full text-left p-3 border-b hover:bg-gray-100 ${selectedId === s.id ? 'bg-white' : ''}`}
-          >
-            <div className="font-medium truncate">{s.title || 'Untitled'}</div>
-            <div className="text-xs text-muted-foreground truncate">
-              {s.last_message ? s.last_message.content : 'No messages yet'}
+          <div key={s.id} className={`w-full p-3 border-b hover:bg-gray-100 ${selectedId === s.id ? 'bg-white' : ''}`}>
+            <div className="flex items-start justify-between gap-2">
+              <button className="text-left flex-1" onClick={() => onSelect(s.id)}>
+                <div className="font-medium truncate">{s.title || 'Untitled'}</div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {s.last_message ? s.last_message.content : 'No messages yet'}
+                </div>
+              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  title="Rename"
+                  className="text-sm text-muted-foreground px-2"
+                  onClick={() => {
+                    const newTitle = window.prompt('Rename conversation', s.title || '')
+                    if (newTitle !== null && typeof onRename === 'function') {
+                      onRename(s.id, newTitle)
+                    }
+                  }}
+                >
+                  ✏️
+                </button>
+                <button
+                  title="Delete"
+                  className="text-sm text-red-500 px-2"
+                  onClick={() => {
+                    const ok = window.confirm('Delete this conversation? This cannot be undone.')
+                    if (ok && typeof onDelete === 'function') onDelete(s.id)
+                  }}
+                >
+                  🗑️
+                </button>
+              </div>
             </div>
-          </button>
+          </div>
         ))}
       </div>
     </aside>

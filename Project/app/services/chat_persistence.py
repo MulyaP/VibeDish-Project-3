@@ -125,4 +125,22 @@ def get_sessions_for_user(user_id: str, limit: int = 50, offset: int = 0):
     return out
 
 
-__all__ = ["create_session", "append_message", "get_history", "session_belongs_to_user", "get_sessions_for_user"]
+def update_session_title(session_id: str, title: Optional[str]) -> bool:
+    """Update a session's title. Returns True on success."""
+    supabase = get_db()
+    payload = {"title": title}
+    r = supabase.table("chat_sessions").update(payload).eq("id", session_id).execute()
+    return bool(getattr(r, "data", None))
+
+
+def delete_session(session_id: str) -> bool:
+    """Delete a session and its messages. Returns True on success."""
+    supabase = get_db()
+    # Delete messages first
+    supabase.table("chat_messages").delete().eq("session_id", session_id).execute()
+    # Then delete session row
+    r = supabase.table("chat_sessions").delete().eq("id", session_id).execute()
+    return bool(getattr(r, "data", None))
+
+
+__all__ = ["create_session", "append_message", "get_history", "session_belongs_to_user", "get_sessions_for_user", "update_session_title", "delete_session"]
