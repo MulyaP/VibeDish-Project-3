@@ -102,6 +102,44 @@ export function useChat(initialSessionId?: string | null) {
 			}
 		}, [])
 
+		const createSessionViaApi = useCallback(async (title?: string) => {
+			const resp = await authenticatedFetch(`${API_BASE}/chat/sessions`, {
+				method: 'POST',
+				body: JSON.stringify({ title }),
+			})
+			if (!resp.ok) throw new Error('Failed to create session')
+			const data = await resp.json()
+			// refresh sessions
+			void loadSessions()
+			return data.session_id
+		}, [loadSessions])
+
+		const renameSession = useCallback(async (session_id: string, title?: string) => {
+			const resp = await authenticatedFetch(`${API_BASE}/chat/sessions/${encodeURIComponent(session_id)}`, {
+				method: 'PATCH',
+				body: JSON.stringify({ title }),
+			})
+			if (!resp.ok) throw new Error('Failed to rename session')
+			const data = await resp.json()
+			void loadSessions()
+			return data
+		}, [loadSessions])
+
+		const deleteSessionViaApi = useCallback(async (session_id: string) => {
+			const resp = await authenticatedFetch(`${API_BASE}/chat/sessions/${encodeURIComponent(session_id)}`, {
+				method: 'DELETE',
+			})
+			if (!resp.ok) throw new Error('Failed to delete session')
+			const data = await resp.json()
+			void loadSessions()
+			// if deleted session was active, clear
+			if (sessionId === session_id) {
+				setSessionId(null)
+				setMessages([])
+			}
+			return data
+		}, [loadSessions, sessionId])
+
 	return {
 		sessionId,
 		setSessionId,
@@ -113,6 +151,9 @@ export function useChat(initialSessionId?: string | null) {
 		loadHistory,
 		createNewSession,
 			loadSessions,
+		createSession: createSessionViaApi,
+		renameSession,
+		deleteSession: deleteSessionViaApi,
 	}
 }
 

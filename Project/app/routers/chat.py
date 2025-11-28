@@ -4,7 +4,15 @@ from typing import Optional
 import uuid
 
 from ..services.chat_service import generate_reply_with_groq
-from ..services.chat_persistence import create_session, append_message, get_history, session_belongs_to_user, get_sessions_for_user
+from ..services.chat_persistence import (
+    create_session,
+    append_message,
+    get_history,
+    session_belongs_to_user,
+    get_sessions_for_user,
+    update_session_title,
+    delete_session,
+)
 from ..auth import current_user
 
 router = APIRouter()
@@ -115,5 +123,55 @@ async def list_sessions(limit: int = 50, offset: int = 0, user: dict = Depends(c
     try:
         sessions = get_sessions_for_user(user.get("id"), limit=limit, offset=offset)
         return {"sessions": sessions}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+class CreateSessionRequest(BaseModel):
+    title: Optional[str] = None
+
+
+@router.post("/sessions")
+async def create_session_route(req: CreateSessionRequest, user: dict = Depends(current_user)):
+    """Create a new chat session for the authenticated user."""
+    try:
+        sid = create_session(user_id=user.get("id"), title=req.title)
+        return {"session_id": sid}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+class UpdateSessionRequest(BaseModel):
+    title: Optional[str] = None
+
+
+@router.patch("/sessions/{session_id}")
+async def update_session_route(session_id: str, req: UpdateSessionRequest, user: dict = Depends(current_user)):
+    """Update session metadata (title) — owner only."""
+    if not session_belongs_to_user(session_id, user.get("id")):
+        raise HTTPException(status_code=403, detail="Session does not belong to the authenticated user")
+    try:
+        ok = update_session_title(session_id, req.title)
+        if not ok:
+            raise HTTPException(status_code=500, detail="Failed to update session")
+        return {"session_id": session_id, "title": req.title}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.delete("/sessions/{session_id}")
+async def delete_session_route(session_id: str, user: dict = Depends(current_user)):
+    """Delete a session and its messages — owner only."""
+    if not session_belongs_to_user(session_id, user.get("id")):
+        raise HTTPException(status_code=403, detail="Session does not belong to the authenticated user")
+    try:
+        ok = delete_session(session_id)
+        if not ok:
+            raise HTTPException(status_code=500, detail="Failed to delete session")
+        return {"deleted": True}
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))

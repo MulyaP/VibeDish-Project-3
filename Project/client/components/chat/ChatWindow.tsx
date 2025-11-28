@@ -6,7 +6,7 @@ import MessageList from "./MessageList"
 import SessionList from "./SessionList"
 
 export default function ChatWindow() {
-  const { messages, sendMessage, loading, error, sessionId, setSessionId, sessions, loadSessions, createNewSession, loadHistory } = useChat()
+  const { messages, sendMessage, loading, error, sessionId, setSessionId, sessions, loadSessions, createNewSession, loadHistory, createSession, renameSession, deleteSession } = useChat()
   const [text, setText] = useState("")
 
   useEffect(() => {
@@ -33,9 +33,34 @@ export default function ChatWindow() {
             setSessionId(id)
             void loadHistory(id)
           }}
-          onCreate={() => {
-            const sid = createNewSession()
-            setSessionId(sid)
+          onCreate={async () => {
+            try {
+              // create on server so session is persisted
+              const sid = await createSession('New conversation')
+              if (sid) {
+                setSessionId(sid)
+                // history will be empty for new session
+              }
+            } catch (err) {
+              // fallback to local session
+              const sid = createNewSession()
+              setSessionId(sid)
+            }
+          }}
+          onRename={async (id: string, title?: string) => {
+            try {
+              await renameSession(id, title)
+            } catch (err) {
+              // ignore
+            }
+          }}
+          onDelete={async (id: string) => {
+            try {
+              await deleteSession(id)
+              // if current session deleted, clear selection handled by hook
+            } catch (err) {
+              // ignore
+            }
           }}
         />
         <div className="flex-1">
