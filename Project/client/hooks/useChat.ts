@@ -15,6 +15,7 @@ export type ChatMessage = {
 export function useChat(initialSessionId?: string | null) {
 	const [sessionId, setSessionId] = useState<string | null>(typeof window !== "undefined" ? (initialSessionId || localStorage.getItem("chat_session_id")) : initialSessionId || null)
 	const [messages, setMessages] = useState<ChatMessage[]>([])
+		const [sessions, setSessions] = useState<any[]>([])
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
@@ -88,15 +89,30 @@ export function useChat(initialSessionId?: string | null) {
 		return sid
 	}, [])
 
+		const loadSessions = useCallback(async () => {
+			try {
+				const resp = await authenticatedFetch(`${API_BASE}/chat/sessions`)
+				if (!resp.ok) throw new Error('Failed to load sessions')
+				const data = await resp.json()
+				setSessions(data.sessions || [])
+				return data.sessions || []
+			} catch (err) {
+				// ignore for now
+				return []
+			}
+		}, [])
+
 	return {
 		sessionId,
 		setSessionId,
 		messages,
+			sessions,
 		loading,
 		error,
 		sendMessage,
 		loadHistory,
 		createNewSession,
+			loadSessions,
 	}
 }
 

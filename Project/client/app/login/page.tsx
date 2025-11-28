@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +21,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const { login } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
 
   const validateEmail = (email: string): boolean => {
@@ -65,7 +66,22 @@ export default function LoginPage() {
         title: "Success",
         description: "Logged in successfully",
       })
-      router.push("/")
+      // If a `next` query param was provided, redirect there after login
+      const next = searchParams?.get("next")
+      const isInternalPath = (p?: string | null) => {
+        if (!p || typeof p !== "string") return false
+        // must start with a single slash, not contain protocol or double slashes
+        if (!p.startsWith("/")) return false
+        if (p.startsWith("//")) return false
+        if (p.includes("://")) return false
+        return true
+      }
+
+      if (isInternalPath(next)) {
+        router.push(next as string)
+      } else {
+        router.push("/")
+      }
     } catch (error) {
       toast({
         title: "Error",
