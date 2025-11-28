@@ -3,7 +3,8 @@ from pydantic import BaseModel
 from typing import Optional
 import uuid
 
-from ..services.chat_service import generate_reply_with_groq, generate_title_with_groq
+from ..services.chat_service import generate_reply_with_groq
+from ..services.chat_service import generate_title_with_groq
 from ..services.chat_persistence import (
     create_session,
     append_message,
