@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/auth-context"
-import { Leaf, LogOut, ShoppingCart, Package, User } from "lucide-react"
+import { Leaf, LogOut, ShoppingCart, Package, User, MessageSquare } from "lucide-react"
 
 export function Header() {
   const pathname = usePathname()
@@ -12,8 +12,9 @@ export function Header() {
 
   const navLinks = [
     ...(!user || user?.role === "customer"
-      ? [
+          ? [
           { href: "/", label: "Home" },
+          { href: "/chat", label: "Chat" },
           { href: "/browse", label: "Deals" },
           { href: "/map", label: "Map" },
         ]
@@ -28,6 +29,7 @@ export function Header() {
       ? [
           { href: "/cart", label: "Cart", icon: ShoppingCart },
           { href: "/orders", label: "Orders", icon: Package },
+          { href: "/chat", label: "Chat", icon: MessageSquare },
         ]
       : []
     ),
