@@ -8,6 +8,11 @@ import { hashPasswordWithSalt } from '@/lib/crypto-utils'
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
+  useSearchParams: jest.fn(() => ({
+    get: jest.fn(() => null),
+    has: jest.fn(() => false),
+    toString: jest.fn(() => ''),
+  })),
 }))
 
 // Mock auth context
@@ -21,7 +26,7 @@ jest.mock('@/lib/crypto-utils', () => ({
 }))
 
 // Mock environment variable
-process.env.HASH_SALT = 'test-salt'
+process.env.HASH_SALT = 'test-salt-for-testing'
 
 // Mock toast
 const mockToast = jest.fn()
@@ -52,7 +57,9 @@ describe('LoginPage', () => {
       isAuthenticated: false,
       isLoading: false,
     })
-    ;(hashPasswordWithSalt as jest.Mock).mockResolvedValue('hashedpassword123')
+    ;(hashPasswordWithSalt as jest.Mock).mockImplementation((password: string, salt: string) => 
+      Promise.resolve('hashedpassword123')
+    )
   })
 
   describe('Initial Rendering', () => {
@@ -392,7 +399,7 @@ describe('LoginPage', () => {
       fireEvent.click(signInButton)
       
       await waitFor(() => {
-        expect(hashPasswordWithSalt).toHaveBeenCalledWith('password123', expect.any(String))
+        expect(hashPasswordWithSalt).toHaveBeenCalledWith('password123', 'test-salt-for-testing')
       })
 
       await waitFor(() => {
@@ -415,7 +422,7 @@ describe('LoginPage', () => {
       fireEvent.click(signInButton)
       
       await waitFor(() => {
-        expect(hashPasswordWithSalt).toHaveBeenCalledWith('password123', expect.any(String))
+        expect(hashPasswordWithSalt).toHaveBeenCalledWith('password123', 'test-salt-for-testing')
       })
 
       await waitFor(() => {
@@ -760,7 +767,7 @@ describe('LoginPage', () => {
       fireEvent.click(signInButton)
       
       await waitFor(() => {
-        expect(hashPasswordWithSalt).toHaveBeenCalledWith('P@ssw0rd!', expect.any(String))
+        expect(hashPasswordWithSalt).toHaveBeenCalledWith('P@ssw0rd!', 'test-salt-for-testing')
       })
 
       await waitFor(() => {

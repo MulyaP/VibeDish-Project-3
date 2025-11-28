@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { jest } from '@jest/globals'
 import OwnerDashboard from '@/app/owner/page'
 
@@ -8,13 +8,15 @@ const mockGetOwnerMeals = jest.fn() as jest.MockedFunction<any>
 const mockCreateMeal = jest.fn() as jest.MockedFunction<any>
 const mockUpdateMeal = jest.fn() as jest.MockedFunction<any>
 const mockDeleteMeal = jest.fn() as jest.MockedFunction<any>
+const mockGetMyRestaurant = jest.fn() as jest.MockedFunction<any>
 
 // Mock the API module
 jest.mock('@/lib/api', () => ({
   getOwnerMeals: mockGetOwnerMeals,
   createMeal: mockCreateMeal,
   updateMeal: mockUpdateMeal,
-  deleteMeal: mockDeleteMeal
+  deleteMeal: mockDeleteMeal,
+  getMyRestaurant: mockGetMyRestaurant
 }))
 
 // Mock the toast hook
@@ -26,17 +28,31 @@ jest.mock('@/hooks/use-toast', () => ({
 
 beforeEach(() => {
   jest.clearAllMocks()
-  // Set default successful responses
+  // Set default successful responses - ensure meals is always an array
   mockGetOwnerMeals.mockResolvedValue([])
   mockCreateMeal.mockResolvedValue({})
   mockUpdateMeal.mockResolvedValue({})
   mockDeleteMeal.mockResolvedValue(true)
+  mockGetMyRestaurant.mockResolvedValue({ name: 'Test Restaurant', address: '123 Test St' })
+  
+  // Ensure fetch is properly mocked
+  global.fetch = jest.fn(() =>
+    Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve([]),
+      text: () => Promise.resolve(''),
+      status: 200,
+      statusText: 'OK',
+    })
+  ) as jest.Mock
 })
 
 describe('OwnerDashboard', () => {
   // Test 1: Component renders basic elements
-  test('renders dashboard header', () => {
-    render(<OwnerDashboard />)
+  test('renders dashboard header', async () => {
+    await act(async () => {
+      render(<OwnerDashboard />)
+    })
     
     expect(screen.getByText('Restaurant Dashboard')).toBeInTheDocument()
     expect(screen.getByText('Manage your surplus inventory')).toBeInTheDocument()
