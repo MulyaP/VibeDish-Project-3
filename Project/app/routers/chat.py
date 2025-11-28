@@ -4,7 +4,7 @@ from typing import Optional
 import uuid
 
 from ..services.chat_service import generate_reply_with_groq
-from ..services.chat_persistence import create_session, append_message, get_history, session_belongs_to_user
+from ..services.chat_persistence import create_session, append_message, get_history, session_belongs_to_user, get_sessions_for_user
 from ..auth import current_user
 
 router = APIRouter()
@@ -101,5 +101,19 @@ async def get_history_route(session_id: Optional[str] = None, user: dict = Depen
 
         messages = _get_history(session_id)
         return {"session_id": session_id, "messages": messages}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.get("/sessions")
+async def list_sessions(limit: int = 50, offset: int = 0, user: dict = Depends(current_user)):
+    """List chat sessions for the authenticated user.
+
+    Returns sessions ordered by created_at desc with a `last_message` preview.
+    Pagination via `limit` and `offset`.
+    """
+    try:
+        sessions = get_sessions_for_user(user.get("id"), limit=limit, offset=offset)
+        return {"sessions": sessions}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
