@@ -167,6 +167,12 @@ describe('LoginPage', () => {
           variant: 'destructive',
         })
       })
+
+      // Wait for loading state to complete
+      await waitFor(() => {
+        const button = screen.getByRole('button', { name: /sign in/i })
+        expect(button).not.toBeDisabled()
+      })
     })
 
     it('should show error when email is empty', async () => {
@@ -185,6 +191,11 @@ describe('LoginPage', () => {
           variant: 'destructive',
         })
       })
+
+      await waitFor(() => {
+        const button = screen.getByRole('button', { name: /sign in/i })
+        expect(button).not.toBeDisabled()
+      })
     })
 
     it('should show error when password is empty', async () => {
@@ -202,6 +213,11 @@ describe('LoginPage', () => {
           description: 'Please fill in all fields',
           variant: 'destructive',
         })
+      })
+
+      await waitFor(() => {
+        const button = screen.getByRole('button', { name: /sign in/i })
+        expect(button).not.toBeDisabled()
       })
     })
   })
@@ -226,6 +242,11 @@ describe('LoginPage', () => {
           variant: 'destructive',
         })
       })
+
+      await waitFor(() => {
+        const button = screen.getByRole('button', { name: /sign in/i })
+        expect(button).not.toBeDisabled()
+      })
     })
 
     it('should show error for email without @', async () => {
@@ -246,6 +267,11 @@ describe('LoginPage', () => {
           description: 'Please enter a valid email address',
           variant: 'destructive',
         })
+      })
+
+      await waitFor(() => {
+        const button = screen.getByRole('button', { name: /sign in/i })
+        expect(button).not.toBeDisabled()
       })
     })
 
@@ -268,6 +294,11 @@ describe('LoginPage', () => {
           variant: 'destructive',
         })
       })
+
+      await waitFor(() => {
+        const button = screen.getByRole('button', { name: /sign in/i })
+        expect(button).not.toBeDisabled()
+      })
     })
 
     it('should accept valid email format', async () => {
@@ -282,6 +313,10 @@ describe('LoginPage', () => {
       const signInButton = screen.getByRole('button', { name: /sign in/i })
       fireEvent.click(signInButton)
       
+      await waitFor(() => {
+        expect(mockLogin).toHaveBeenCalled()
+      })
+
       await waitFor(() => {
         expect(mockToast).not.toHaveBeenCalledWith(
           expect.objectContaining({
@@ -312,6 +347,11 @@ describe('LoginPage', () => {
           variant: 'destructive',
         })
       })
+
+      await waitFor(() => {
+        const button = screen.getByRole('button', { name: /sign in/i })
+        expect(button).not.toBeDisabled()
+      })
     })
 
     it('should accept password with exactly 6 characters', async () => {
@@ -326,6 +366,10 @@ describe('LoginPage', () => {
       const signInButton = screen.getByRole('button', { name: /sign in/i })
       fireEvent.click(signInButton)
       
+      await waitFor(() => {
+        expect(mockLogin).toHaveBeenCalled()
+      })
+
       await waitFor(() => {
         expect(mockToast).not.toHaveBeenCalledWith(
           expect.objectContaining({
@@ -350,6 +394,10 @@ describe('LoginPage', () => {
       await waitFor(() => {
         expect(hashPasswordWithSalt).toHaveBeenCalledWith('password123', expect.any(String))
       })
+
+      await waitFor(() => {
+        expect(mockLogin).toHaveBeenCalled()
+      })
     })
   })
 
@@ -369,6 +417,10 @@ describe('LoginPage', () => {
       await waitFor(() => {
         expect(hashPasswordWithSalt).toHaveBeenCalledWith('password123', expect.any(String))
       })
+
+      await waitFor(() => {
+        expect(mockLogin).toHaveBeenCalled()
+      })
     })
 
     it('should call login with hashed password', async () => {
@@ -385,6 +437,11 @@ describe('LoginPage', () => {
       
       await waitFor(() => {
         expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'hashedpassword123')
+      })
+
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(mockToast).toHaveBeenCalled()
       })
     })
 
@@ -406,6 +463,11 @@ describe('LoginPage', () => {
           description: 'Logged in successfully',
         })
       })
+
+      // Wait for redirect
+      await waitFor(() => {
+        expect(mockPush).toHaveBeenCalled()
+      })
     })
 
     it('should redirect to home page after successful login', async () => {
@@ -423,6 +485,11 @@ describe('LoginPage', () => {
       await waitFor(() => {
         expect(mockPush).toHaveBeenCalledWith('/')
       })
+
+      // Wait for all state updates to complete
+      await waitFor(() => {
+        expect(mockToast).toHaveBeenCalled()
+      })
     })
 
     it('should show loading state during login', async () => {
@@ -438,6 +505,11 @@ describe('LoginPage', () => {
       fireEvent.click(signInButton)
       
       expect(screen.getByText('Signing in...')).toBeInTheDocument()
+
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(mockLogin).toHaveBeenCalled()
+      })
     })
 
     it('should disable button during login', async () => {
@@ -454,6 +526,11 @@ describe('LoginPage', () => {
       
       const loadingButton = screen.getByRole('button', { name: /signing in/i })
       expect(loadingButton).toBeDisabled()
+
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(mockLogin).toHaveBeenCalled()
+      })
     })
   })
 
@@ -479,6 +556,12 @@ describe('LoginPage', () => {
           variant: 'destructive',
         })
       })
+
+      // Wait for button to re-enable
+      await waitFor(() => {
+        const button = screen.getByRole('button', { name: /sign in/i })
+        expect(button).not.toBeDisabled()
+      })
     })
 
     it('should show generic error message for non-Error objects', async () => {
@@ -502,6 +585,11 @@ describe('LoginPage', () => {
           variant: 'destructive',
         })
       })
+
+      await waitFor(() => {
+        const button = screen.getByRole('button', { name: /sign in/i })
+        expect(button).not.toBeDisabled()
+      })
     })
 
     it('should re-enable button after error', async () => {
@@ -522,8 +610,10 @@ describe('LoginPage', () => {
         expect(mockToast).toHaveBeenCalled()
       })
       
-      const button = screen.getByRole('button', { name: /sign in/i })
-      expect(button).not.toBeDisabled()
+      await waitFor(() => {
+        const button = screen.getByRole('button', { name: /sign in/i })
+        expect(button).not.toBeDisabled()
+      })
     })
 
     it('should handle network errors', async () => {
@@ -547,6 +637,11 @@ describe('LoginPage', () => {
           variant: 'destructive',
         })
       })
+
+      await waitFor(() => {
+        const button = screen.getByRole('button', { name: /sign in/i })
+        expect(button).not.toBeDisabled()
+      })
     })
   })
 
@@ -565,6 +660,10 @@ describe('LoginPage', () => {
       await waitFor(() => {
         expect(mockLogin).toHaveBeenCalled()
       })
+
+      await waitFor(() => {
+        expect(mockToast).toHaveBeenCalled()
+      })
     })
 
     it('should submit form when Enter is pressed in password field', async () => {
@@ -581,6 +680,10 @@ describe('LoginPage', () => {
       await waitFor(() => {
         expect(mockLogin).toHaveBeenCalled()
       })
+
+      await waitFor(() => {
+        expect(mockToast).toHaveBeenCalled()
+      })
     })
 
     it('should not submit on other key presses', async () => {
@@ -594,9 +697,10 @@ describe('LoginPage', () => {
       
       fireEvent.keyDown(passwordInput, { key: 'Tab', code: 'Tab' })
       
-      await waitFor(() => {
-        expect(mockLogin).not.toHaveBeenCalled()
-      }, { timeout: 500 })
+      // Give it a moment to ensure nothing happens
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      expect(mockLogin).not.toHaveBeenCalled()
     })
   })
 
@@ -616,6 +720,10 @@ describe('LoginPage', () => {
       await waitFor(() => {
         expect(mockLogin).toHaveBeenCalledWith('test+tag@example.com', 'hashedpassword123')
       })
+
+      await waitFor(() => {
+        expect(mockToast).toHaveBeenCalled()
+      })
     })
 
     it('should handle email with subdomain', async () => {
@@ -633,6 +741,10 @@ describe('LoginPage', () => {
       await waitFor(() => {
         expect(mockLogin).toHaveBeenCalledWith('test@mail.example.com', 'hashedpassword123')
       })
+
+      await waitFor(() => {
+        expect(mockToast).toHaveBeenCalled()
+      })
     })
 
     it('should handle password with special characters', async () => {
@@ -649,6 +761,10 @@ describe('LoginPage', () => {
       
       await waitFor(() => {
         expect(hashPasswordWithSalt).toHaveBeenCalledWith('P@ssw0rd!', expect.any(String))
+      })
+
+      await waitFor(() => {
+        expect(mockLogin).toHaveBeenCalled()
       })
     })
 
@@ -682,7 +798,10 @@ describe('LoginPage', () => {
       await waitFor(() => {
         expect(mockLogin).toHaveBeenCalledTimes(1)
       })
+
+      await waitFor(() => {
+        expect(mockToast).toHaveBeenCalled()
+      })
     })
   })
 })
-
