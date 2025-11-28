@@ -11,7 +11,7 @@ export function Header() {
   const { user, logout, isAuthenticated } = useAuth()
 
   const navLinks = [
-    ...(!user || user?.role === "customer" || user?.role === "owner" 
+    ...(!user || user?.role === "customer"
       ? [
           { href: "/", label: "Home" },
           { href: "/browse", label: "Deals" },
@@ -19,19 +19,18 @@ export function Header() {
         ]
       : []
     ),
-    ...(user?.role === "owner" ? [{ href: "/owner", label: "Dashboard" }] : []),
-    ...(user?.role === "delivery_driver" ? [{ href: "/driver", label: "Driver Dashboard" }] : []),
+    ...(user?.role === "owner" ? [{ href: "/owner", label: "Dashboard" }, { href: "/owner/orders", label: "Orders" }] : []),
+    ...(user?.role === "delivery_driver" ? [{ href: "/driver", label: "Nearby Orders" }, {href: '/driver/active', label: "Active Order"}] : []),
   ]
 
   const userLinks = [
     ...(!user || user?.role === "customer"
       ? [
           { href: "/cart", label: "Cart", icon: ShoppingCart },
+          { href: "/orders", label: "Orders", icon: Package },
         ]
       : []
     ),
-    // { href: "/cart", label: "Cart", icon: ShoppingCart },
-    { href: "/orders", label: "Orders", icon: Package },
   ]
 
   return (

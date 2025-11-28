@@ -6,7 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { ShoppingCart, Trash2, Loader2, Plus, Minus, AlertCircle, CheckCircle2 } from "lucide-react"
+import { ShoppingCart, Trash2, Loader2, Plus, Minus, AlertCircle, CheckCircle2, MapPin } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { geocodeAddress } from "@/lib/geocoding"
 import { useAuth } from "@/context/auth-context"
 import { getCart, updateCartItem, removeFromCart, clearCart, checkoutCart } from "@/lib/api"
 import {
@@ -47,6 +50,12 @@ export default function CartPage() {
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set())
   const [checkingOut, setCheckingOut] = useState(false)
   const [checkoutSuccess, setCheckoutSuccess] = useState(false)
+  const [deliveryAddress, setDeliveryAddress] = useState("")
+  const [latitude, setLatitude] = useState<number | null>(null)
+  const [longitude, setLongitude] = useState<number | null>(null)
+  const [formattedAddress, setFormattedAddress] = useState("")
+  const [isGeocodingLoading, setIsGeocodingLoading] = useState(false)
+  const [tipAmount, setTipAmount] = useState(0)
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -115,11 +124,45 @@ export default function CartPage() {
     }
   }
 
+  const handleGeocodeAddress = async () => {
+    if (!deliveryAddress || deliveryAddress.trim().length === 0) {
+      setError("Please enter a delivery address")
+      return
+    }
+
+    setIsGeocodingLoading(true)
+    setError(null)
+    try {
+      const result = await geocodeAddress(deliveryAddress)
+      setLatitude(result.latitude)
+      setLongitude(result.longitude)
+      setFormattedAddress(result.place_name)
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to locate address")
+    } finally {
+      setIsGeocodingLoading(false)
+    }
+  }
+
   const handleCheckout = async () => {
+    if (latitude === null || longitude === null) {
+      setError("Please locate your delivery address first")
+      return
+    }
+
     setCheckingOut(true)
     setError(null)
     try {
-      const result = await checkoutCart()
+      let checkoutBody = {
+        deliveryAddress: deliveryAddress,
+        latitude: latitude,
+        longitude: longitude,
+        tipAmount: tipAmount,
+        total : total,
+        tax: tax,
+        deliveryFee: deliveryFee
+      }
+      const result = await checkoutCart(checkoutBody)
       setCheckoutSuccess(true)
       // Reload cart after successful checkout
       setTimeout(() => {
@@ -154,6 +197,12 @@ export default function CartPage() {
   }
 
   const isEmpty = !cart || cart.items.length === 0
+
+  // Calculate fees
+  const subtotal = cart?.cart_total || 0
+  const deliveryFee = Math.max(4.00, subtotal * 0.10)
+  const tax = subtotal * 0.02
+  const total = subtotal + deliveryFee + tax + tipAmount
 
   return (
     <div className="container py-12">
@@ -336,11 +385,19 @@ export default function CartPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${cart.cart_total.toFixed(2)}</span>
+                    <span>${subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax</span>
-                    <span>Calculated at checkout</span>
+                    <span className="text-muted-foreground">Delivery Fee</span>
+                    <span>${deliveryFee.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tax (2%)</span>
+                    <span>${tax.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tip</span>
+                    <span>${tipAmount.toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -348,14 +405,78 @@ export default function CartPage() {
 
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span>${cart.cart_total.toFixed(2)}</span>
+                  <span>${total.toFixed(2)}</span>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label htmlFor="tip-amount">Tip Amount</Label>
+                  <Input
+                    id="tip-amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={tipAmount || ''}
+                    onChange={(e) => setTipAmount(parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="delivery-address">Delivery Address</Label>
+                    <Input
+                      id="delivery-address"
+                      type="text"
+                      placeholder="123 Main St, City, State, ZIP"
+                      value={deliveryAddress}
+                      onChange={(e) => {
+                        setDeliveryAddress(e.target.value)
+                        setLatitude(null)
+                        setLongitude(null)
+                        setFormattedAddress("")
+                      }}
+                    />
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={handleGeocodeAddress}
+                    disabled={isGeocodingLoading || !deliveryAddress}
+                  >
+                    {isGeocodingLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Locating Address...
+                      </>
+                    ) : (
+                      <>
+                        <MapPin className="h-4 w-4" />
+                        Locate Address
+                      </>
+                    )}
+                  </Button>
+
+                  {latitude !== null && longitude !== null && (
+                    <div className="rounded-lg bg-muted p-3 space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Location Found</p>
+                      {formattedAddress && (
+                        <p className="text-sm font-medium">{formattedAddress}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <Button
                   className="w-full"
                   size="lg"
                   onClick={handleCheckout}
-                  disabled={checkingOut || isEmpty}
+                  disabled={checkingOut || isEmpty || latitude === null || longitude === null}
                 >
                   {checkingOut ? (
                     <>

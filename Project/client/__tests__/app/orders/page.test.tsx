@@ -55,6 +55,9 @@ describe('OrdersPage', () => {
     {
       id: 'order-1',
       restaurant_id: 'rest-1',
+      restaurants: {
+        name: 'Pizza Palace',
+      },
       status: 'pending',
       total: 27.97,
       created_at: '2024-01-01T12:00:00Z',
@@ -62,6 +65,9 @@ describe('OrdersPage', () => {
     {
       id: 'order-2',
       restaurant_id: 'rest-1',
+      restaurants: {
+        name: 'Pizza Palace',
+      },
       status: 'completed',
       total: 45.50,
       created_at: '2024-01-02T15:30:00Z',
@@ -69,6 +75,9 @@ describe('OrdersPage', () => {
     {
       id: 'order-3',
       restaurant_id: 'rest-2',
+      restaurants: {
+        name: 'Burger House',
+      },
       status: 'cancelled',
       total: 15.99,
       created_at: '2024-01-03T10:00:00Z',
@@ -80,7 +89,9 @@ describe('OrdersPage', () => {
       id: 'order-1',
       user_id: 'user-1',
       restaurant_id: 'rest-1',
-      restaurant_name: 'Pizza Palace',
+      restaurants: {
+        name: 'Pizza Palace',
+      },
       status: 'pending',
       total: 27.97,
       created_at: '2024-01-01T12:00:00Z',

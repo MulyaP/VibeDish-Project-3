@@ -96,7 +96,7 @@ def create_order(payload: Dict[str, Any], user=Depends(current_user)):
 @router.get("/mine")
 def list_my_orders(user=Depends(current_user), limit: int = Query(default=50, le=100)):
     supabase = get_db()
-    response = supabase.table("orders").select("id,restaurant_id,status,total,created_at").eq("user_id", user["id"]).order("created_at", desc=True).limit(limit).execute()
+    response = supabase.table("orders").select("id,restaurant_id,restaurants(name),status,total,created_at").eq("user_id", user["id"]).order("created_at", desc=True).limit(limit).execute()
     return response.data
 
 @router.get("/{order_id}")

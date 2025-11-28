@@ -190,28 +190,47 @@ describe('API Functions', () => {
     })
 
     describe('checkoutCart', () => {
+      const mockCheckoutBody = {
+        deliveryAddress: '123 Main St',
+        latitude: 35.7796,
+        longitude: -78.6382,
+        tipAmount: 5.0,
+        total: 32.97,
+        deliveryFee: 4.0,
+        tax: 0.56,
+      }
+
       it('should call authenticated fetch with correct parameters', async () => {
-        const mockCheckoutResult = { order_id: 'order-123', status: 'pending', total: 27.97 }
+        const mockCheckoutResult = { order_id: 'order-123', status: 'pending', total: 32.97 }
         mockAuthFetch.mockResolvedValueOnce({
           ok: true,
           json: async () => mockCheckoutResult,
         } as Response)
 
-        await api.checkoutCart()
+        await api.checkoutCart(mockCheckoutBody)
 
         expect(mockAuthFetch).toHaveBeenCalledWith(`${API_BASE_URL}/cart/checkout`, {
           method: 'POST',
+          body: JSON.stringify({
+            delivery_address: mockCheckoutBody.deliveryAddress,
+            latitude: mockCheckoutBody.latitude,
+            longitude: mockCheckoutBody.longitude,
+            tip_amount: mockCheckoutBody.tipAmount,
+            total: mockCheckoutBody.total,
+            delivery_fee: mockCheckoutBody.deliveryFee,
+            tax: mockCheckoutBody.tax,
+          }),
         })
       })
 
       it('should return checkout result on success', async () => {
-        const mockCheckoutResult = { order_id: 'order-123', status: 'pending', total: 27.97 }
+        const mockCheckoutResult = { order_id: 'order-123', status: 'pending', total: 32.97 }
         mockAuthFetch.mockResolvedValueOnce({
           ok: true,
           json: async () => mockCheckoutResult,
         } as Response)
 
-        const result = await api.checkoutCart()
+        const result = await api.checkoutCart(mockCheckoutBody)
 
         expect(result).toEqual(mockCheckoutResult)
       })
@@ -222,7 +241,7 @@ describe('API Functions', () => {
           json: async () => ({ detail: 'cart is empty' }),
         } as Response)
 
-        await expect(api.checkoutCart()).rejects.toThrow('cart is empty')
+        await expect(api.checkoutCart(mockCheckoutBody)).rejects.toThrow('cart is empty')
       })
 
       it('should throw default error if no detail provided', async () => {
@@ -231,7 +250,7 @@ describe('API Functions', () => {
           json: async () => ({}),
         } as Response)
 
-        await expect(api.checkoutCart()).rejects.toThrow('Failed to checkout')
+        await expect(api.checkoutCart(mockCheckoutBody)).rejects.toThrow('Failed to checkout')
       })
     })
   })
