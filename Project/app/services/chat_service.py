@@ -95,4 +95,141 @@ async def generate_reply_with_groq(
     return {"reply": reply_text, "provider_info": provider_info}
 
 
+async def generate_title_with_groq(
+    session_messages: List[Dict[str, Any]], max_words: int = 6, max_chars: int = 60
+) -> Dict[str, Any]:
+    """Generate a short title for a conversation using the Groq model.
+
+    Returns a dict {"title": Optional[str], "provider_info": Optional[dict]}.
+    The title will be truncated to at most `max_words` words and `max_chars` characters.
+    """
+    def _fallback_title_from_messages(msgs: List[Dict[str, Any]]) -> Optional[str]:
+        # Prefer the last user message content, otherwise earliest message.
+        text = None
+        for m in reversed(msgs or []):
+            if m.get("role") == "user" and m.get("content"):
+                text = m.get("content")
+                break
+        if not text:
+            # fallback to any content
+            for m in reversed(msgs or []):
+                if m.get("content"):
+                    text = m.get("content")
+                    break
+        if not text:
+            return None
+        # Use first sentence if present
+        if "." in text:
+            first = text.split(".", 1)[0]
+        else:
+            first = text
+        # Trim by words then chars
+        words = first.split()
+        title = " ".join(words[:max_words]).strip()
+        if len(title) > max_chars:
+            title = title[: max_chars - 1].rstrip() + "…"
+        return title or None
+
+    if not GROQ_API_KEY:
+        # No provider configured — return a heuristic title rather than raising.
+        return {"title": _fallback_title_from_messages(session_messages), "provider_info": None}
+
+    # Build a compact system + user prompt instructing the model to return only a short title
+    system_msg = {
+        "role": "system",
+        "content": (
+            "You are a concise title generator. Given the conversation, produce a short, descriptive "
+            f"title no longer than {max_words} words and {max_chars} characters. Reply with a JSON object "
+            "ONLY, with exactly two keys: \"title\" (the short heading) and \"content\" (a short summary). "
+            "Example: {\"title\": \"Charred Brussels Sprouts\", \"content\": \"Roasted with garlic and balsamic\"}. "
+            "Do not wrap the JSON in markdown or backticks and do not include any extra text."
+        ),
+    }
+
+    # Combine recent messages into a single user message for brevity
+    convo_text_parts = []
+    for m in (session_messages or []):
+        role = m.get("role")
+        content = m.get("content")
+        if role and content:
+            # Keep messages short when building prompt
+            convo_text_parts.append(f"{role}: {content}")
+    user_msg = {"role": "user", "content": "\n".join(convo_text_parts) or ""}
+
+    try:
+        completion = await run_in_threadpool(_call_groq_sync, [system_msg, user_msg], GROQ_MODEL, None)
+    except Exception as exc:
+        # provider failed — fall back to heuristic title but include no provider_info
+        return {"title": _fallback_title_from_messages(session_messages), "provider_info": None}
+
+    provider_info = _serialize(completion)
+
+    # Robustly extract the JSON payload (title + content) from the SDK response.
+    title = None
+    content = None
+    try:
+        choices = getattr(completion, "choices", None)
+        raw_text = None
+        if choices and len(choices) > 0:
+            first = choices[0]
+            # Try common accessors
+            if hasattr(first, "message"):
+                msg = getattr(first, "message")
+                if isinstance(msg, dict):
+                    raw_text = msg.get("content") or msg.get("text")
+                elif isinstance(msg, str):
+                    raw_text = msg
+            elif hasattr(first, "text"):
+                txt = getattr(first, "text")
+                raw_text = txt if isinstance(txt, str) else None
+            elif isinstance(first, str):
+                raw_text = first
+
+        # If we have a raw_text string, try to parse JSON from it
+        if raw_text:
+            raw_text = str(raw_text).strip()
+            # Extract a JSON object substring if extra text is present
+            import re, json
+
+            json_obj = None
+            try:
+                # direct parse if the whole string is JSON
+                json_obj = json.loads(raw_text)
+            except Exception:
+                # try to find a {...} substring
+                m = re.search(r"\{[^\}]*\}", raw_text)
+                if m:
+                    candidate = m.group(0)
+                    try:
+                        json_obj = json.loads(candidate)
+                    except Exception:
+                        json_obj = None
+
+            if isinstance(json_obj, dict):
+                title = json_obj.get("title")
+                content = json_obj.get("content")
+            else:
+                # If not JSON, treat the whole text as a title string
+                title = raw_text
+    except Exception:
+        title = None
+
+    # Final sanitization and truncation rules for title
+    if title:
+        title = str(title).strip()
+        if "\n" in title:
+            title = title.split("\n")[0].strip()
+        words = title.split()
+        if len(words) > max_words:
+            title = " ".join(words[:max_words]).strip()
+        if len(title) > max_chars:
+            title = title[: max_chars - 1].rstrip() + "…"
+
+    # If provider returned nothing useful, fall back to heuristic
+    if not title:
+        title = _fallback_title_from_messages(session_messages)
+
+    return {"title": title, "content": content, "provider_info": provider_info}
+
+
 __all__ = ["generate_reply_with_groq"]

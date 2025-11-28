@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional
 import uuid
 
-from ..services.chat_service import generate_reply_with_groq
+from ..services.chat_service import generate_reply_with_groq, generate_title_with_groq
 from ..services.chat_persistence import (
     create_session,
     append_message,
@@ -29,6 +29,8 @@ class SendResponse(BaseModel):
     message_id: str
     reply: str
     provider_info: Optional[dict] = None
+    title: Optional[str] = None
+    title_provider_info: Optional[dict] = None
 
 
 @router.post("/messages", response_model=SendResponse)
@@ -42,10 +44,15 @@ async def send_message(req: SendRequest, user: dict = Depends(current_user)):
     session_id = req.session_id or str(uuid.uuid4())
     message_id = str(uuid.uuid4())
 
+    # Track whether this request created a brand-new session so we can try to
+    # auto-generate a short title immediately from the user's initial message.
+    new_session = False
+
     # 1) Ensure session exists and is owned by the authenticated user
     if not req.session_id:
         req.session_id = create_session(user_id=user.get("id"))
         session_id = req.session_id
+        new_session = True
     else:
         # if session_id provided, ensure it belongs to this user
         if not session_belongs_to_user(req.session_id, user.get("id")):
@@ -60,6 +67,28 @@ async def send_message(req: SendRequest, user: dict = Depends(current_user)):
     session_messages = []
     for m in raw_history:
         session_messages.append({"role": m.get("role"), "content": m.get("content")})
+
+    # If this is a newly-created session, try to generate a short title now
+    # from the available messages (which include the user's initial message we
+    # just persisted). This ensures the session heading is available immediately
+    # in the UI instead of waiting until after the assistant reply.
+    if new_session:
+        try:
+            try:
+                result = await generate_title_with_groq(session_messages)
+            except Exception:
+                result = {"title": None, "provider_info": None}
+            title_pre = result.get("title") if isinstance(result, dict) else None
+            if title_pre:
+                try:
+                    update_session_title(session_id, title_pre)
+                except Exception:
+                    # ignore DB failures for title update
+                    pass
+        except Exception:
+            # swallow all title-generation failures to avoid impacting the
+            # primary send flow
+            pass
 
     # 4) Call provider with history
     try:
@@ -83,11 +112,40 @@ async def send_message(req: SendRequest, user: dict = Depends(current_user)):
 
     assistant_msg_id = append_message(session_id, "assistant", reply_text, provider_info=provider_info, token_count=token_count)
 
+    # Try to auto-generate a short session title when the session was newly created.
+    # We do this after persisting the assistant reply so we have content to summarize.
+    title_post = None
+    title_provider_info = None
+    try:
+        # Build a compact history to pass to the title generator (include recent messages)
+        try:
+            # pass raw_history plus the latest assistant reply for context
+            messages_for_title = session_messages + [{"role": "assistant", "content": reply_text}]
+            result = await generate_title_with_groq(messages_for_title)
+        except Exception:
+            result = {"title": None, "provider_info": None}
+
+        if isinstance(result, dict):
+            title_post = result.get("title")
+            title_provider_info = result.get("provider_info")
+
+        if title_post:
+            # best-effort: update DB title (ignore failures)
+            try:
+                update_session_title(session_id, title_post)
+            except Exception:
+                pass
+    except Exception:
+        # swallow errors to avoid impacting main flow
+        pass
+
     return SendResponse(
         session_id=session_id,
         message_id=assistant_msg_id,
         reply=reply_text,
         provider_info=provider_info,
+        title=(title_post or (locals().get('title_pre') if 'title_pre' in locals() else None)),
+        title_provider_info=title_provider_info,
     )
 
 
