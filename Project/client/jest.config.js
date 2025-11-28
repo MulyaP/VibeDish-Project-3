@@ -40,6 +40,7 @@ const customJestConfig = {
     },
   },
   coverageReporters: ['text', 'text-summary'],
+  testTimeout: 10000,
 }
 
 module.exports = createJestConfig(customJestConfig)

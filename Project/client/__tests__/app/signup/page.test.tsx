@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { useRouter } from 'next/navigation'
 import SignupPage from '@/app/signup/page'
 import { useAuth } from '@/context/auth-context'
@@ -21,7 +21,7 @@ jest.mock('@/lib/crypto-utils', () => ({
 }))
 
 // Mock environment variable
-process.env.HASH_SALT = 'test-salt'
+process.env.HASH_SALT = 'test-salt-for-testing'
 
 // Mock toast
 const mockToast = jest.fn()
@@ -52,7 +52,9 @@ describe('SignupPage', () => {
       isAuthenticated: false,
       isLoading: false,
     })
-    ;(hashPasswordWithSalt as jest.Mock).mockResolvedValue('hashedpassword123')
+    ;(hashPasswordWithSalt as jest.Mock).mockImplementation((password: string, salt: string) => 
+      Promise.resolve('hashedpassword123')
+    )
   })
 
   describe('Initial Rendering', () => {
@@ -489,10 +491,13 @@ describe('SignupPage', () => {
       fireEvent.change(confirmPasswordInput, { target: { value: 'password123' } })
       
       const createAccountButton = screen.getByRole('button', { name: /create account/i })
-      fireEvent.click(createAccountButton)
+      
+      await act(async () => {
+        fireEvent.click(createAccountButton)
+      })
       
       await waitFor(() => {
-        expect(hashPasswordWithSalt).toHaveBeenCalledWith('password123', expect.any(String))
+        expect(hashPasswordWithSalt).toHaveBeenCalledWith('password123', 'test-salt-for-testing')
       })
     })
 
@@ -768,10 +773,13 @@ describe('SignupPage', () => {
       fireEvent.change(confirmPasswordInput, { target: { value: 'P@ssw0rd!' } })
       
       const createAccountButton = screen.getByRole('button', { name: /create account/i })
-      fireEvent.click(createAccountButton)
+      
+      await act(async () => {
+        fireEvent.click(createAccountButton)
+      })
       
       await waitFor(() => {
-        expect(hashPasswordWithSalt).toHaveBeenCalledWith('P@ssw0rd!', expect.any(String))
+        expect(hashPasswordWithSalt).toHaveBeenCalledWith('P@ssw0rd!', 'test-salt-for-testing')
       })
     })
 
