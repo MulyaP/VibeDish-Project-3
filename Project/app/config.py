@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     # Required
     DATABASE_URL: str = "postgresql://test:test@localhost:5432/test"
     SUPABASE_URL: str = "https://test.supabase.co"
-    SUPABASE_KEY: str = "test-key"  # anon or service role key
+    SUPABASE_KEY: Optional[str]=None
 
     # Optional auth bits
     SUPABASE_JWKS_URL: Optional[str] = None   # derived if not provided

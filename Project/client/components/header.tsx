@@ -36,29 +36,34 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-semibold text-xl">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-            <Leaf className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="text-foreground">VibeDish</span>
-        </Link>
+      <div className="container flex h-16 items-center">
+        <div className="flex-1">
+          <Link href="/" className="flex items-center gap-2 font-semibold text-xl">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+              <Leaf className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <span className="text-foreground">VibeDish</span>
+          </Link>
+        </div>
 
-        <nav className="hidden md:flex items-center gap-6">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                pathname === link.href ? "text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        <div className="flex-1 flex justify-center">
+          <nav className="hidden md:flex items-center gap-6">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  pathname === link.href ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex-1 flex justify-end">
+          <div className="flex items-center gap-3">
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
               {userLinks.map((link) => {
@@ -99,6 +104,7 @@ export function Header() {
               <Link href="/login">Login</Link>
             </Button>
           )}
+          </div>
         </div>
       </div>
     </header>
