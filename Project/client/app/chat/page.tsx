@@ -11,8 +11,9 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      // Redirect unauthenticated users to the login page
-      router.push("/login")
+      // Redirect unauthenticated users to the login page and preserve the intended path
+      const next = encodeURIComponent("/chat")
+      router.push(`/login?next=${next}`)
     }
   }, [isAuthenticated, isLoading, router])
 

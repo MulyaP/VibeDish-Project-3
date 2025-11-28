@@ -452,6 +452,22 @@ export async function deleteMeal(mealId: string) {
   return true
 }
 
+// ==================== CHAT API ====================
+
+/**
+ * List chat sessions for the current user
+ */
+export async function getChatSessions(limit: number = 50, offset: number = 0) {
+  const response = await authenticatedFetch(`${API_BASE_URL}/chat/sessions?limit=${limit}&offset=${offset}`)
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to fetch chat sessions')
+  }
+  const data = await response.json()
+  return data.sessions || []
+}
+
+
 /**
  * Get orders for owner's restaurant
  */
