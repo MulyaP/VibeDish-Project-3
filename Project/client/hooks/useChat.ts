@@ -71,6 +71,16 @@ export function useChat(initialSessionId?: string | null) {
 				} catch (_) {}
 			}
 
+			// If server returned a generated title, update local sessions to reflect it immediately
+			if (data.title) {
+				setSessions((prev) => prev.map((s) => (s.id === data.session_id ? { ...s, title: data.title } : s)))
+			}
+
+			// Refresh sessions list so any server-generated title shows up in the UI
+			try {
+				void loadSessions()
+			} catch (_) {}
+
 			return data
 		} catch (err: any) {
 			setError(err?.message || String(err))

@@ -41,9 +41,7 @@ export default function SessionList({
             <div className="flex items-start justify-between gap-2">
               <button className="text-left flex-1" onClick={() => onSelect(s.id)}>
                 <div className="font-medium truncate">{s.title || 'Untitled'}</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {s.last_message ? s.last_message.content : 'No messages yet'}
-                </div>
+                {/* Only show the title/heading on the left; do not show full message body */}
               </button>
               <div className="flex items-center gap-1">
                 <button

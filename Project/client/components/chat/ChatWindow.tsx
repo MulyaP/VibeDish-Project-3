@@ -35,8 +35,8 @@ export default function ChatWindow() {
           }}
           onCreate={async () => {
             try {
-              // create on server so session is persisted
-              const sid = await createSession('New conversation')
+              // create on server without a default title so server can auto-generate
+              const sid = await createSession()
               if (sid) {
                 setSessionId(sid)
                 // history will be empty for new session
