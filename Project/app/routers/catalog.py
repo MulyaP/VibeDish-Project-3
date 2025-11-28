@@ -36,10 +36,6 @@ def list_meals_for_restaurant(
         default="name_asc",
         description="one of: name_asc,name_desc,price_asc,price_desc"
     ),
-    vegetarian: bool = Query(default=False),
-    vegan: bool = Query(default=False),
-    gluten_free: bool = Query(default=False),
-    exclude_allergens: str = Query(default=""),
 ):
     supabase = get_db()
     query = supabase.table("meals").select("*").eq("restaurant_id", restaurant_id)
@@ -55,40 +51,4 @@ def list_meals_for_restaurant(
     query = query.order(sort_col, desc=not ascending).range(offset, offset + limit - 1)
     
     response = query.execute()
-    meals = response.data
-    
-    # Apply dietary filters
-    if not (vegetarian or vegan or gluten_free or exclude_allergens):
-        return meals
-        
-    filtered_meals = []
-    for meal in meals:
-        # Handle tags as string or array
-        tags = meal.get("tags") or []
-        if isinstance(tags, str):
-            tags = [tags] if tags else []
-        tags_lower = [tag.lower() for tag in tags]
-        
-        # Handle allergens as string or array  
-        allergens = meal.get("allergens") or []
-        if isinstance(allergens, str):
-            allergens = [allergens] if allergens else []
-        allergens_lower = [allergen.lower() for allergen in allergens]
-        
-        # Check dietary preferences
-        if vegetarian and "vegetarian" not in tags_lower:
-            continue
-        if vegan and "vegan" not in tags_lower:
-            continue
-        if gluten_free and any("gluten" in allergen for allergen in allergens_lower):
-            continue
-            
-        # Check allergen exclusions
-        if exclude_allergens:
-            excluded = [a.strip().lower() for a in exclude_allergens.split(",") if a.strip()]
-            if any(any(exc in allergen for exc in excluded) for allergen in allergens_lower):
-                continue
-        
-        filtered_meals.append(meal)
-    
-    return filtered_meals
+    return response.data
