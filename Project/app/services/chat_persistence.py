@@ -58,15 +58,25 @@ def get_history(session_id: str, limit: int = 100) -> List[Dict[str, Any]]:
     return r.data or []
 
 
-def session_belongs_to_user(session_id: str, user_id: str) -> bool:
-    """Return True if the session with `session_id` belongs to `user_id`.
+def session_belongs_to_user(session_id: str, user_id: Optional[str]) -> bool:
+    """Return True if the session is owned by the given user_id.
 
-    Uses Supabase to check ownership. Returns False if session not found or not owned.
+    If the session row has a NULL/None user_id, this will only return True
+    when the provided user_id is also None. Otherwise returns False.
     """
     supabase = get_db()
-    r = supabase.table("chat_sessions").select("id").eq("id", session_id).eq("user_id", user_id).limit(1).execute()
+    r = supabase.table("chat_sessions").select("user_id").eq("id", session_id).limit(1).execute()
     data = r.data or []
-    return len(data) > 0
+    if not data:
+        return False
+    row = data[0]
+    session_user_id = row.get("user_id")
+    # Normalize types to string or None
+    if session_user_id is None and user_id is None:
+        return True
+    if session_user_id is None and user_id is not None:
+        return False
+    return str(session_user_id) == str(user_id)
 
 
-__all__ = ["create_session", "append_message", "get_history"]
+__all__ = ["create_session", "append_message", "get_history", "session_belongs_to_user"]
