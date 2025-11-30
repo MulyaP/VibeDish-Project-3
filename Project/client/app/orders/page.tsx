@@ -6,10 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Package, Loader2, ChevronDown, ChevronUp, Clock, CheckCircle2, XCircle, ChefHat, PackageCheck, Truck } from "lucide-react"
+import { Package, Loader2, ChevronDown, ChevronUp, Clock, CheckCircle2, XCircle, ChefHat, PackageCheck, Truck, MessageSquare, Store } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
-import { getMyOrders, getOrder, getOrderStatus, cancelOrder } from "@/lib/api"
+import { getMyOrders, getOrder, getOrderStatus, cancelOrder, getOrderFeedback } from "@/lib/api"
+import { FeedbackModal } from "@/components/feedback-modal"
 import { format } from "date-fns"
+import { Star } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import {
   AlertDialog,
@@ -22,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Label } from "@radix-ui/react-label"
 
 interface Order {
   id: string
@@ -142,6 +145,9 @@ export default function OrdersPage() {
   const [orderTimelines, setOrderTimelines] = useState<Record<string, OrderTimeline>>({})
   const [loadingDetails, setLoadingDetails] = useState<Set<string>>(new Set())
   const [cancellingOrders, setCancellingOrders] = useState<Set<string>>(new Set())
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
+  const [selectedOrderForFeedback, setSelectedOrderForFeedback] = useState<Order | null>(null)
+  const [orderFeedbacks, setOrderFeedbacks] = useState<Record<string, any>>({})
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -180,12 +186,16 @@ export default function OrdersPage() {
       if (!orderDetails[orderId]) {
         setLoadingDetails(prev => new Set(prev).add(orderId))
         try {
-          const [details, timeline] = await Promise.all([
+          const [details, timeline, feedback] = await Promise.all([
             getOrder(orderId),
             getOrderStatus(orderId),
+            getOrderFeedback(orderId).catch(() => null),
           ])
           setOrderDetails(prev => ({ ...prev, [orderId]: details }))
           setOrderTimelines(prev => ({ ...prev, [orderId]: timeline }))
+          if (feedback) {
+            setOrderFeedbacks(prev => ({ ...prev, [orderId]: feedback }))
+          }
         } catch (err) {
           setError(err instanceof Error ? err.message : "Failed to load order details")
         } finally {
@@ -249,6 +259,20 @@ export default function OrdersPage() {
         next.delete(orderId)
         return next
       })
+    }
+  }
+
+  const handleOpenFeedbackModal = (order: Order) => {
+    setSelectedOrderForFeedback(order)
+    setFeedbackModalOpen(true)
+  }
+
+  const handleFeedbackSuccess = async () => {
+    if (selectedOrderForFeedback) {
+      const feedback = await getOrderFeedback(selectedOrderForFeedback.id).catch(() => null)
+      if (feedback) {
+        setOrderFeedbacks(prev => ({ ...prev, [selectedOrderForFeedback.id]: feedback }))
+      }
     }
   }
 
@@ -320,6 +344,11 @@ export default function OrdersPage() {
             const isLoadingDetails = loadingDetails.has(order.id)
             const isCancelling = cancellingOrders.has(order.id)
             const canCancel = order.status === "pending"
+            const canProvideFeedback = ["delivered", "completed"].includes(order.status)
+            const feedback = orderFeedbacks[order.id]
+            const hasRestaurantFeedback = feedback?.restaurant_feedback
+            const hasDriverFeedback = feedback?.driver_feedback
+            const hasBothFeedback = hasRestaurantFeedback && hasDriverFeedback
 
             return (
               <Card key={order.id}>
@@ -341,7 +370,17 @@ export default function OrdersPage() {
                     </div>
                     <div className="text-right space-y-1">
                       <p className="text-2xl font-bold">${order.total.toFixed(2)}</p>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap justify-end">
+                        {canProvideFeedback && !hasBothFeedback && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenFeedbackModal(order)}
+                          >
+                            <MessageSquare className="h-4 w-4 mr-1" />
+                            {!hasRestaurantFeedback && !hasDriverFeedback ? 'Feedback' : 'Add Feedback'}
+                          </Button>
+                        )}
                         {canCancel && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -474,6 +513,74 @@ export default function OrdersPage() {
 
                         <Separator />
 
+                        {/* Feedback Section */}
+                        {(hasRestaurantFeedback || hasDriverFeedback) && (
+                          <>
+                            <div className="space-y-4">
+                              <h3 className="font-semibold">Your Feedback</h3>
+                              
+                              {hasRestaurantFeedback && (
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <Store className="h-4 w-4 text-muted-foreground" />
+                                    <Label className="text-sm font-medium">Restaurant</Label>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <Star
+                                        key={star}
+                                        className={`h-4 w-4 ${
+                                          star <= feedback.restaurant_feedback.rating
+                                            ? 'fill-yellow-400 text-yellow-400'
+                                            : 'text-gray-300'
+                                        }`}
+                                      />
+                                    ))}
+                                    <span className="ml-2 text-sm text-muted-foreground">
+                                      {feedback.restaurant_feedback.rating}/5
+                                    </span>
+                                  </div>
+                                  {feedback.restaurant_feedback.comment && (
+                                    <p className="text-sm text-muted-foreground">
+                                      {feedback.restaurant_feedback.comment}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+
+                              {hasDriverFeedback && (
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <Truck className="h-4 w-4 text-muted-foreground" />
+                                    <Label className="text-sm font-medium">Driver</Label>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <Star
+                                        key={star}
+                                        className={`h-4 w-4 ${
+                                          star <= feedback.driver_feedback.rating
+                                            ? 'fill-yellow-400 text-yellow-400'
+                                            : 'text-gray-300'
+                                        }`}
+                                      />
+                                    ))}
+                                    <span className="ml-2 text-sm text-muted-foreground">
+                                      {feedback.driver_feedback.rating}/5
+                                    </span>
+                                  </div>
+                                  {feedback.driver_feedback.comment && (
+                                    <p className="text-sm text-muted-foreground">
+                                      {feedback.driver_feedback.comment}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <Separator />
+                          </>
+                        )}
+
                         {/* Total */}
                         <div className="flex justify-between items-center text-lg font-bold">
                           <span>Total</span>
@@ -487,6 +594,19 @@ export default function OrdersPage() {
             )
           })}
         </div>
+      )}
+
+      {/* Feedback Modal */}
+      {selectedOrderForFeedback && (
+        <FeedbackModal
+          orderId={selectedOrderForFeedback.id}
+          restaurantName={selectedOrderForFeedback.restaurants?.name || 'Restaurant'}
+          open={feedbackModalOpen}
+          onOpenChange={setFeedbackModalOpen}
+          onSuccess={handleFeedbackSuccess}
+          hasRestaurantFeedback={!!orderFeedbacks[selectedOrderForFeedback.id]?.restaurant_feedback}
+          hasDriverFeedback={!!orderFeedbacks[selectedOrderForFeedback.id]?.driver_feedback}
+        />
       )}
     </div>
   )
