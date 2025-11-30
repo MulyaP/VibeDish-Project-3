@@ -569,3 +569,53 @@ export async function deleteImageFromS3(imageUrl: string) {
   return response.json()
 }
 
+// ==================== FEEDBACK API ====================
+
+/**
+ * Submit restaurant feedback for an order
+ */
+export async function submitRestaurantFeedback(orderId: string, rating: number, comment?: string) {
+  const response = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}/feedback/restaurant`, {
+    method: "POST",
+    body: JSON.stringify({ rating, comment }),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || "Failed to submit restaurant feedback")
+  }
+  
+  return response.json()
+}
+
+/**
+ * Submit driver feedback for an order
+ */
+export async function submitDriverFeedback(orderId: string, rating: number, comment?: string) {
+  const response = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}/feedback/driver`, {
+    method: "POST",
+    body: JSON.stringify({ rating, comment }),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || "Failed to submit driver feedback")
+  }
+  
+  return response.json()
+}
+
+/**
+ * Get all feedback for an order
+ */
+export async function getOrderFeedback(orderId: string) {
+  const response = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}/feedback`)
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || "Failed to get feedback")
+  }
+  
+  return response.json()
+}
+
