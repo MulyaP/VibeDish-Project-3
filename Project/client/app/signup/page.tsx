@@ -14,7 +14,7 @@ import Link from "next/link"
 import { hashPasswordWithSalt } from "@/lib/crypto-utils"
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const SALT = process.env.HASH_SALT || 'test-salt-for-testing'
+const SALT = process.env.HASH_SALT!
 
 export default function SignupPage() {
   const [name, setName] = useState("")

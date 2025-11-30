@@ -15,7 +15,7 @@ import { hashPasswordWithSalt } from "@/lib/crypto-utils"
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 // Provide a safe default salt for test environments where HASH_SALT may be undefined.
 // In real deployments prefer injecting this via NEXT_PUBLIC_* or fetching from the server.
-const SALT = process.env.HASH_SALT ?? "test-salt"
+const SALT = process.env.HASH_SALT!
 
 export default function LoginClient() {
   const [email, setEmail] = useState("")
