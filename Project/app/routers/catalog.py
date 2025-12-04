@@ -1,6 +1,6 @@
 # app/routers/catalog.py
 from fastapi import APIRouter, Query
-from typing import Optional
+from typing import Optional, List
 from ..db import get_db
 
 router = APIRouter()
@@ -30,6 +30,10 @@ def list_meals_for_restaurant(
     restaurant_id: str,
     surplus_only: bool = Query(default=False, description="Only show meals with surplus available"),
     search: Optional[str] = Query(default=None, description="Search substring for meal name"),
+    vegetarian: bool = Query(default=False, description="Filter for vegetarian meals"),
+    vegan: bool = Query(default=False, description="Filter for vegan meals"),
+    gluten_free: bool = Query(default=False, description="Filter for gluten-free meals"),
+    exclude_allergens: Optional[str] = Query(default=None, description="Comma-separated allergens to exclude"),
     limit: int = Query(default=20, le=100),
     offset: int = Query(default=0, ge=0),
     sort: str = Query(
@@ -46,9 +50,37 @@ def list_meals_for_restaurant(
     if search:
         query = query.ilike("name", f"%{search}%")
     
+    # Apply dietary filters
+    if vegetarian:
+        query = query.contains("tags", ["vegetarian"])
+    
+    if vegan:
+        query = query.contains("tags", ["vegan"])
+    
+    if gluten_free:
+        query = query.contains("tags", ["gluten-free"])
+    
+    # Handle allergen exclusion
+    if exclude_allergens:
+        allergens_to_exclude = [allergen.strip().lower() for allergen in exclude_allergens.split(",")]
+        # This will need to be handled in post-processing since Supabase doesn't have a "not contains" operator
+    
     sort_col = "name" if "name" in sort else "surplus_price"
     ascending = "asc" in sort
     query = query.order(sort_col, desc=not ascending).range(offset, offset + limit - 1)
     
     response = query.execute()
-    return response.data
+    meals = response.data
+    
+    # Post-process to exclude allergens if specified
+    if exclude_allergens:
+        allergens_to_exclude = [allergen.strip().lower() for allergen in exclude_allergens.split(",")]
+        meals = [
+            meal for meal in meals
+            if not any(
+                allergen.lower() in [a.lower() for a in meal.get("allergens", [])]
+                for allergen in allergens_to_exclude
+            )
+        ]
+    
+    return meals
