@@ -6,7 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { MapPin, Search, Store, ArrowLeft, UtensilsCrossed, Loader2, Plus, Minus, Music, Sparkles } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { MapPin, Search, Store, ArrowLeft, UtensilsCrossed, Loader2, Plus, Minus, Music, Sparkles, Filter } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { addToCart, getCart, updateCartItem, removeFromCart, getMoodRecommendations, checkSpotifyStatus, initiateSpotifyLogin } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
@@ -46,13 +48,24 @@ export default function BrowsePage() {
   
   const [view, setView] = useState<"restaurants" | "meals">("restaurants")
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null)
-
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [meals, setMeals] = useState<Meal[]>([])
-
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showFilters, setShowFilters] = useState(false)
+  const [filters, setFilters] = useState({
+    vegetarian: false,
+    vegan: false,
+    gluten_free: false,
+    exclude_allergens: ""
+  })
+  const [tempFilters, setTempFilters] = useState({
+    vegetarian: false,
+    vegan: false,
+    gluten_free: false,
+    exclude_allergens: ""
+  })
   const [updatingMeals, setUpdatingMeals] = useState<Set<string>>(new Set())
   const [mealQuantities, setMealQuantities] = useState<Record<string, { qty: number, itemId: string }>>({})
   
@@ -71,7 +84,6 @@ export default function BrowsePage() {
     if (isAuthenticated && view === "meals") {
       loadCartQuantities()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, view])
 
   // Handle Spotify connection callback
@@ -81,22 +93,18 @@ export default function BrowsePage() {
         title: "Spotify Connected!",
         description: "Fetching your personalized recommendations...",
       })
-      // Clean URL
       const url = new URL(window.location.href)
       url.searchParams.delete('spotify_connected')
       window.history.replaceState({}, '', url.toString())
-      // Fetch recommendations
       fetchRecommendations(selectedRestaurant.id)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spotifyConnected])
+  }, [spotifyConnected, selectedRestaurant])
 
   // Fetch recommendations when meals are loaded and user is authenticated
   useEffect(() => {
     if (isAuthenticated && view === "meals" && selectedRestaurant && meals.length > 0) {
       fetchRecommendations(selectedRestaurant.id)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, view, selectedRestaurant, meals.length])
 
   // Handle restaurant selection from URL parameter
@@ -107,13 +115,28 @@ export default function BrowsePage() {
         handleRestaurantClick(restaurant)
       }
     } else if (!restaurantIdFromUrl && view === "meals") {
-      // Reset to restaurants view when URL parameter is removed
       setView("restaurants")
       setSelectedRestaurant(null)
       setMeals([])
       setSearchQuery("")
     }
   }, [restaurantIdFromUrl, restaurants])
+
+  // Refetch meals when filters change
+  useEffect(() => {
+    if (selectedRestaurant && view === "meals") {
+      fetchMeals(selectedRestaurant.id)
+    }
+  }, [filters.vegetarian, filters.vegan, filters.gluten_free, filters.exclude_allergens])
+
+  // Check if any filters are active
+  const hasActiveFilters = filters.vegetarian || filters.vegan || filters.gluten_free || filters.exclude_allergens
+
+  const applyFilters = () => {
+    console.log('Applying filters:', tempFilters)
+    setFilters(tempFilters)
+    setShowFilters(false)
+  }
 
   const fetchRestaurants = async () => {
     setLoading(true)
@@ -135,12 +158,24 @@ export default function BrowsePage() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(`${API_BASE_URL}/catalog/restaurants/${restaurantId}/meals`)
+      const params = new URLSearchParams()
+      if (filters.vegetarian) params.append('vegetarian', 'true')
+      if (filters.vegan) params.append('vegan', 'true')
+      if (filters.gluten_free) params.append('gluten_free', 'true')
+      if (filters.exclude_allergens) params.append('exclude_allergens', filters.exclude_allergens)
+      
+      const url = `${API_BASE_URL}/catalog/restaurants/${restaurantId}/meals${params.toString() ? '?' + params.toString() : ''}`
+      console.log('Fetching meals with filters:', filters)
+      console.log('API URL:', url)
+      
+      const response = await fetch(url)
       if (!response.ok) throw new Error("Failed to fetch meals")
       const data = await response.json()
+      console.log('Received meals:', data.length, 'meals')
       setMeals(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred")
+      setMeals([])
       console.error("Error fetching meals:", err)
     } finally {
       setLoading(false)
@@ -175,7 +210,6 @@ export default function BrowsePage() {
       const response = await getMoodRecommendations(restaurantId)
       
       if (response.recommended_foods && Array.isArray(response.recommended_foods)) {
-        // Extract meal IDs directly from the response
         const matchedIds = response.recommended_foods
           .map((food: any) => food.id)
           .filter((id: string) => id)
@@ -192,11 +226,9 @@ export default function BrowsePage() {
     } catch (err: any) {
       console.error("Error fetching recommendations:", err)
       
-      // Check for 404 error indicating Spotify not connected
       if (err.status === 404 || err.message?.includes("User Spotify authentication not found")) {
         setShowSpotifyConnect(true)
       }
-      // Silently ignore other errors (no tracks found, API issues, etc.)
     } finally {
       setLoadingRecommendations(false)
     }
@@ -214,7 +246,6 @@ export default function BrowsePage() {
     }
 
     try {
-      // This will redirect to Spotify OAuth
       await initiateSpotifyLogin()
     } catch (err) {
       toast({
@@ -229,15 +260,16 @@ export default function BrowsePage() {
     setSelectedRestaurant(restaurant)
     setView("meals")
     setSearchQuery("")
+    const resetFilters = { vegetarian: false, vegan: false, gluten_free: false, exclude_allergens: "" }
+    setFilters(resetFilters)
+    setTempFilters(resetFilters)
     fetchMeals(restaurant.id)
   }
 
   const handleBackToRestaurants = () => {
-    // If we came from another page (e.g., map), navigate to clean browse page
     if (restaurantIdFromUrl) {
       router.push('/browse')
     } else {
-      // Otherwise just reset the view state
       setView("restaurants")
       setSelectedRestaurant(null)
       setMeals([])
@@ -245,20 +277,17 @@ export default function BrowsePage() {
     }
   }
 
-  // Filter restaurants by search
   const filteredRestaurants = restaurants.filter((restaurant) =>
     restaurant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     restaurant.address.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  // Filter meals by search (meals are already filtered by restaurant from API)
   const filteredMeals = meals.filter((meal) => {
     const matchesSearch = meal.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      meal.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+(meal.tags && meal.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
     return matchesSearch
   })
 
-  // Calculate discount percentage
   const getDiscountPercentage = (basePrice: number, surplusPrice: number | null) => {
     if (!surplusPrice || basePrice <= 0) return 0
     return Math.round(((basePrice - surplusPrice) / basePrice) * 100)
@@ -283,7 +312,6 @@ export default function BrowsePage() {
       const currentItem = mealQuantities[mealId]
       
       if (newQty === 0 && currentItem) {
-        // Remove from cart
         await removeFromCart(currentItem.itemId)
         setMealQuantities(prev => {
           const next = { ...prev }
@@ -295,7 +323,6 @@ export default function BrowsePage() {
           description: `${mealName} has been removed from your cart`,
         })
       } else if (currentItem) {
-        // Update quantity
         await updateCartItem(currentItem.itemId, newQty)
         setMealQuantities(prev => ({
           ...prev,
@@ -306,9 +333,7 @@ export default function BrowsePage() {
           description: `${mealName} quantity updated to ${newQty}`,
         })
       } else if (newQty > 0) {
-        // Add new item
         const cart = await addToCart(mealId, newQty)
-        // Find the item_id for this meal from the returned cart
         const addedItem = cart.items.find((item: any) => item.meal_id === mealId)
         if (addedItem) {
           setMealQuantities(prev => ({
@@ -327,7 +352,6 @@ export default function BrowsePage() {
         description: err instanceof Error ? err.message : "Failed to update cart",
         variant: "destructive",
       })
-      // Reload cart to sync state
       loadCartQuantities()
     } finally {
       setUpdatingMeals(prev => {
@@ -374,7 +398,7 @@ export default function BrowsePage() {
         )}
       </div>
 
-      {/* Search */}
+      {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -385,7 +409,107 @@ export default function BrowsePage() {
             className="pl-10"
           />
         </div>
+        {view === "meals" && (
+          <Button
+            variant={hasActiveFilters ? "default" : "outline"}
+            onClick={() => {
+              setTempFilters(filters)
+              setShowFilters(!showFilters)
+            }}
+            className="gap-2"
+          >
+            <Filter className={`h-4 w-4 ${hasActiveFilters ? 'text-white' : ''}`} />
+            Filters
+            {hasActiveFilters && (
+              <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 text-xs">
+                !
+              </Badge>
+            )}
+          </Button>
+        )}
       </div>
+
+      {/* Dietary Filters */}
+      {view === "meals" && showFilters && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Dietary Preferences</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="vegetarian"
+                  checked={tempFilters.vegetarian}
+                  onCheckedChange={(checked) => {
+                    setTempFilters(prev => ({ ...prev, vegetarian: checked as boolean }))
+                  }}
+                />
+                <Label htmlFor="vegetarian">Vegetarian</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="vegan"
+                  checked={tempFilters.vegan}
+                  onCheckedChange={(checked) => {
+                    setTempFilters(prev => ({ ...prev, vegan: checked as boolean }))
+                  }}
+                />
+                <Label htmlFor="vegan">Vegan</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="gluten_free"
+                  checked={tempFilters.gluten_free}
+                  onCheckedChange={(checked) => {
+                    setTempFilters(prev => ({ ...prev, gluten_free: checked as boolean }))
+                  }}
+                />
+                <Label htmlFor="gluten_free">Gluten Free</Label>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="allergens">Exclude Allergens</Label>
+              <Input
+                id="allergens"
+                placeholder="e.g., nuts, dairy, shellfish"
+                value={tempFilters.exclude_allergens}
+                onChange={(e) => setTempFilters(prev => ({ ...prev, exclude_allergens: e.target.value }))}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const resetFilters = { vegetarian: false, vegan: false, gluten_free: false, exclude_allergens: "" }
+                  setTempFilters(resetFilters)
+                  setFilters(resetFilters)
+                  setShowFilters(false)
+                }}
+              >
+                Clear
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setTempFilters(filters)
+                  setShowFilters(false)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={applyFilters}
+              >
+                Apply Filters
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Error State */}
       {error && (
@@ -503,7 +627,6 @@ export default function BrowsePage() {
           )}
 
           {(() => {
-            // Split meals into recommended, surplus and regular
             const recommendedMeals = filteredMeals.filter((meal) => recommendedMealIds.includes(meal.id))
             const surplusMeals = filteredMeals.filter((meal) => meal.quantity > 0 && meal.surplus_price !== null && !recommendedMealIds.includes(meal.id))
             const regularMeals = filteredMeals.filter((meal) => (meal.quantity === 0 || meal.surplus_price === null) && !recommendedMealIds.includes(meal.id))
@@ -517,7 +640,6 @@ export default function BrowsePage() {
 
               return (
                 <Card key={meal.id} className="overflow-hidden group hover:shadow-lg transition-shadow">
-                  {/* Meal Image */}
                   {meal.image_link ? (
                     <div className="relative w-full h-48 overflow-hidden bg-muted">
                       <img
@@ -548,7 +670,7 @@ export default function BrowsePage() {
                   <CardHeader>
                     <div className="space-y-1">
                       <CardTitle className="text-lg leading-tight">{meal.name}</CardTitle>
-                      {meal.tags.length > 0 && (
+                      {meal.tags && meal.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {meal.tags.slice(0, 3).map((tag, idx) => (
                             <Badge key={idx} variant="secondary" className="text-xs">
@@ -567,7 +689,7 @@ export default function BrowsePage() {
                       </div>
                       <div className="flex items-start justify-between gap-2">
                         <span className="text-muted-foreground">Allergens:</span>
-                        {meal.allergens.length > 0 ? (
+                        {meal.allergens?.length > 0 ? (
                           <span className="font-medium text-right text-xs">
                             {meal.allergens.join(", ")}
                           </span>
@@ -649,7 +771,6 @@ export default function BrowsePage() {
 
             return (
               <>
-                {/* Recommended Meals Section */}
                 {recommendedMeals.length > 0 && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -672,7 +793,6 @@ export default function BrowsePage() {
                   </div>
                 )}
 
-                {/* Surplus Meals Section */}
                 {surplusMeals.length > 0 && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -692,7 +812,6 @@ export default function BrowsePage() {
                   </div>
                 )}
 
-                {/* Regular Meals Section */}
                 {regularMeals.length > 0 && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -712,8 +831,7 @@ export default function BrowsePage() {
                   </div>
                 )}
 
-                {/* Empty State */}
-                {filteredMeals.length === 0 && (
+                {filteredMeals.length === 0 && !loading && (
                   <div className="text-center py-16 space-y-3">
                     <p className="text-lg text-muted-foreground">No meals found for this restaurant</p>
                     {searchQuery && (

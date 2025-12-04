@@ -29,6 +29,9 @@ jest.mock('@/lib/api', () => ({
   getCart: jest.fn(),
   updateCartItem: jest.fn(),
   removeFromCart: jest.fn(),
+  getMoodRecommendations: jest.fn().mockResolvedValue({ recommended_foods: [] }),
+  checkSpotifyStatus: jest.fn().mockResolvedValue({ connected: false }),
+  initiateSpotifyLogin: jest.fn().mockResolvedValue({}),
 }))
 
 // Mock fetch

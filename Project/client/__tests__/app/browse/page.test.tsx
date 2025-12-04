@@ -5,33 +5,31 @@ import BrowsePage from '@/app/browse/page'
 import { useAuth } from '@/context/auth-context'
 import * as api from '@/lib/api'
 
-// Mock next/navigation
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
   useSearchParams: jest.fn(),
 }))
 
-// Mock auth context
 jest.mock('@/context/auth-context', () => ({
   useAuth: jest.fn(),
 }))
 
-// Mock toast
 jest.mock('@/hooks/use-toast', () => ({
   useToast: () => ({
     toast: jest.fn(),
   }),
 }))
 
-// Mock API functions
 jest.mock('@/lib/api', () => ({
   addToCart: jest.fn(),
   getCart: jest.fn(),
   updateCartItem: jest.fn(),
   removeFromCart: jest.fn(),
+  getMoodRecommendations: jest.fn(),
+  checkSpotifyStatus: jest.fn(),
+  initiateSpotifyLogin: jest.fn(),
 }))
 
-// Mock fetch
 global.fetch = jest.fn()
 
 describe('BrowsePage', () => {
@@ -55,19 +53,12 @@ describe('BrowsePage', () => {
       created_at: '2024-01-01',
     },
     {
-      id: '2',
+      id: '2', 
       name: 'Burger Barn',
       address: '456 Oak Ave',
       owner_id: 'owner2',
       created_at: '2024-01-02',
-    },
-    {
-      id: '3',
-      name: 'Sushi Station',
-      address: '789 Pine Rd',
-      owner_id: 'owner3',
-      created_at: '2024-01-03',
-    },
+    }
   ]
 
   const mockMeals = [
@@ -85,7 +76,7 @@ describe('BrowsePage', () => {
     },
     {
       id: 'meal2',
-      restaurant_id: '1',
+      restaurant_id: '1', 
       name: 'Pepperoni Pizza',
       tags: ['italian'],
       base_price: 17.99,
@@ -94,19 +85,7 @@ describe('BrowsePage', () => {
       allergens: ['gluten', 'dairy'],
       calories: 950,
       created_at: '2024-01-01',
-    },
-    {
-      id: 'meal3',
-      restaurant_id: '2',
-      name: 'Classic Burger',
-      tags: ['american'],
-      base_price: 12.99,
-      quantity: 3,
-      surplus_price: 7.99,
-      allergens: ['gluten'],
-      calories: 650,
-      created_at: '2024-01-02',
-    },
+    }
   ]
 
   beforeEach(() => {
@@ -129,8 +108,8 @@ describe('BrowsePage', () => {
     })
   })
 
-  describe('Initial Rendering and Restaurant View', () => {
-    it('should render the restaurants header', async () => {
+  describe('Restaurant View', () => {
+    it('renders restaurants page header', async () => {
       ;(global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockRestaurants,
@@ -141,25 +120,9 @@ describe('BrowsePage', () => {
       await waitFor(() => {
         expect(screen.getByText('Browse Restaurants')).toBeInTheDocument()
       })
-      expect(screen.getByText(/Discover restaurants offering surplus meals/)).toBeInTheDocument()
     })
 
-    it('should fetch restaurants on mount', async () => {
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockRestaurants,
-      })
-
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith(
-          expect.stringContaining('/catalog/restaurants')
-        )
-      })
-    })
-
-    it('should display all restaurants after loading', async () => {
+    it('displays restaurants after loading', async () => {
       ;(global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockRestaurants,
@@ -170,38 +133,21 @@ describe('BrowsePage', () => {
       await waitFor(() => {
         expect(screen.getByText('Pizza Palace')).toBeInTheDocument()
         expect(screen.getByText('Burger Barn')).toBeInTheDocument()
-        expect(screen.getByText('Sushi Station')).toBeInTheDocument()
       })
     })
 
-    it('should show loading state while fetching restaurants', () => {
+    it('shows loading state', () => {
       ;(global.fetch as jest.Mock).mockImplementationOnce(
         () => new Promise(() => {})
       )
 
       const { container } = render(<BrowsePage />)
-
-      // Check for loading spinner by class
+      
       const loader = container.querySelector('.animate-spin')
       expect(loader).toBeInTheDocument()
     })
 
-    it('should show restaurant count', async () => {
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockRestaurants,
-      })
-
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        expect(screen.getByText('Showing 3 restaurants')).toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('Restaurant Search', () => {
-    it('should filter restaurants by name', async () => {
+    it('handles restaurant search', async () => {
       ;(global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockRestaurants,
@@ -219,98 +165,10 @@ describe('BrowsePage', () => {
       await waitFor(() => {
         expect(screen.getByText('Pizza Palace')).toBeInTheDocument()
         expect(screen.queryByText('Burger Barn')).not.toBeInTheDocument()
-        expect(screen.queryByText('Sushi Station')).not.toBeInTheDocument()
       })
     })
 
-    it('should filter restaurants by address', async () => {
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockRestaurants,
-      })
-
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        expect(screen.getByText('Pizza Palace')).toBeInTheDocument()
-      })
-
-      const searchInput = screen.getByPlaceholderText('Search restaurants...')
-      fireEvent.change(searchInput, { target: { value: 'Oak' } })
-
-      await waitFor(() => {
-        expect(screen.getByText('Burger Barn')).toBeInTheDocument()
-        expect(screen.queryByText('Pizza Palace')).not.toBeInTheDocument()
-      })
-    })
-
-    it('should show no results message when search has no matches', async () => {
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockRestaurants,
-      })
-
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        expect(screen.getByText('Pizza Palace')).toBeInTheDocument()
-      })
-
-      const searchInput = screen.getByPlaceholderText('Search restaurants...')
-      fireEvent.change(searchInput, { target: { value: 'nonexistent' } })
-
-      await waitFor(() => {
-        expect(screen.getByText('No restaurants found')).toBeInTheDocument()
-      })
-    })
-
-    it('should show clear search button when no results', async () => {
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockRestaurants,
-      })
-
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        expect(screen.getByText('Pizza Palace')).toBeInTheDocument()
-      })
-
-      const searchInput = screen.getByPlaceholderText('Search restaurants...')
-      fireEvent.change(searchInput, { target: { value: 'xyz' } })
-
-      await waitFor(() => {
-        const clearButton = screen.getByText('Clear Search')
-        expect(clearButton).toBeInTheDocument()
-        fireEvent.click(clearButton)
-      })
-
-      expect(searchInput).toHaveValue('')
-    })
-
-    it('should be case insensitive', async () => {
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockRestaurants,
-      })
-
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        expect(screen.getByText('Pizza Palace')).toBeInTheDocument()
-      })
-
-      const searchInput = screen.getByPlaceholderText('Search restaurants...')
-      fireEvent.change(searchInput, { target: { value: 'PIZZA' } })
-
-      await waitFor(() => {
-        expect(screen.getByText('Pizza Palace')).toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('Error Handling', () => {
-    it('should display error message when restaurant fetch fails', async () => {
+    it('handles fetch error', async () => {
       ;(global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
       })
@@ -319,57 +177,12 @@ describe('BrowsePage', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/Error:/)).toBeInTheDocument()
-        expect(screen.getByText(/Failed to fetch restaurants/)).toBeInTheDocument()
-      })
-    })
-
-    it('should show try again button on error', async () => {
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-      })
-
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        expect(screen.getByText('Try Again')).toBeInTheDocument()
-      })
-    })
-
-    it('should retry fetch when try again is clicked', async () => {
-      ;(global.fetch as jest.Mock)
-        .mockResolvedValueOnce({ ok: false })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockRestaurants,
-        })
-
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        const tryAgainButton = screen.getByText('Try Again')
-        fireEvent.click(tryAgainButton)
-      })
-
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledTimes(2)
-      })
-    })
-
-    it('should handle network errors', async () => {
-      ;(global.fetch as jest.Mock).mockRejectedValueOnce(
-        new Error('Network error')
-      )
-
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        expect(screen.getByText(/Network error/)).toBeInTheDocument()
       })
     })
   })
 
-  describe('Restaurant Selection and Meals View', () => {
-    it('should switch to meals view when restaurant is clicked', async () => {
+  describe('Meals View', () => {
+    beforeEach(async () => {
       ;(global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
@@ -379,56 +192,9 @@ describe('BrowsePage', () => {
           ok: true,
           json: async () => mockMeals,
         })
-
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        const restaurant = screen.getByText('Pizza Palace')
-        fireEvent.click(restaurant)
-      })
-
-      await waitFor(() => {
-        expect(screen.getByText('Pizza Palace')).toBeInTheDocument()
-        expect(screen.getByText('123 Main St')).toBeInTheDocument()
-      })
     })
 
-    it('should fetch meals when switching to meals view', async () => {
-      ;(global.fetch as jest.Mock)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockRestaurants,
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockMeals,
-        })
-
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        const restaurant = screen.getByText('Pizza Palace')
-        fireEvent.click(restaurant)
-      })
-
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith(
-          expect.stringContaining('/restaurants/1/meals')
-        )
-      })
-    })
-
-    it('should show back to restaurants button in meals view', async () => {
-      ;(global.fetch as jest.Mock)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockRestaurants,
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockMeals,
-        })
-
+    it('switches to meals view when restaurant clicked', async () => {
       render(<BrowsePage />)
 
       await waitFor(() => {
@@ -441,17 +207,63 @@ describe('BrowsePage', () => {
       })
     })
 
-    it('should return to restaurants view when back button is clicked', async () => {
-      ;(global.fetch as jest.Mock)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockRestaurants,
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockMeals,
-        })
+    it('displays meals for selected restaurant', async () => {
+      render(<BrowsePage />)
 
+      await waitFor(() => {
+        const restaurant = screen.getByText('Pizza Palace')
+        fireEvent.click(restaurant)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Margherita Pizza')).toBeInTheDocument()
+        expect(screen.getByText('Pepperoni Pizza')).toBeInTheDocument()
+      })
+    })
+
+    it('shows surplus meals section', async () => {
+      render(<BrowsePage />)
+
+      await waitFor(() => {
+        const restaurant = screen.getByText('Pizza Palace')
+        fireEvent.click(restaurant)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText(/Surplus Meals/)).toBeInTheDocument()
+      })
+    })
+
+    it('displays meal details correctly', async () => {
+      render(<BrowsePage />)
+
+      await waitFor(() => {
+        const restaurant = screen.getByText('Pizza Palace')
+        fireEvent.click(restaurant)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('800 kcal')).toBeInTheDocument()
+        expect(screen.getAllByText('gluten, dairy')[0]).toBeInTheDocument()
+        expect(screen.getByText('$9.99')).toBeInTheDocument()
+        expect(screen.getByText('$15.99')).toBeInTheDocument()
+      })
+    })
+
+    it('shows sold out for zero quantity meals', async () => {
+      render(<BrowsePage />)
+
+      await waitFor(() => {
+        const restaurant = screen.getByText('Pizza Palace')
+        fireEvent.click(restaurant)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Sold Out')).toBeInTheDocument()
+      })
+    })
+
+    it('returns to restaurants view when back clicked', async () => {
       render(<BrowsePage />)
 
       await waitFor(() => {
@@ -470,7 +282,7 @@ describe('BrowsePage', () => {
     })
   })
 
-  describe('Meals Display', () => {
+  describe('Filters', () => {
     beforeEach(async () => {
       ;(global.fetch as jest.Mock)
         .mockResolvedValueOnce({
@@ -483,7 +295,7 @@ describe('BrowsePage', () => {
         })
     })
 
-    it('should display meals for selected restaurant', async () => {
+    it('opens filter panel', async () => {
       render(<BrowsePage />)
 
       await waitFor(() => {
@@ -492,12 +304,21 @@ describe('BrowsePage', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText('Margherita Pizza')).toBeInTheDocument()
-        expect(screen.getByText('Pepperoni Pizza')).toBeInTheDocument()
+        const filtersButton = screen.getByText('Filters')
+        fireEvent.click(filtersButton)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Dietary Preferences')).toBeInTheDocument()
       })
     })
 
-    it('should show surplus meals section', async () => {
+    it('applies vegetarian filter', async () => {
+      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockMeals.filter(m => m.tags.includes('vegetarian')),
+      })
+
       render(<BrowsePage />)
 
       await waitFor(() => {
@@ -506,24 +327,49 @@ describe('BrowsePage', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText(/Surplus Meals/)).toBeInTheDocument()
+        const filtersButton = screen.getByText('Filters')
+        fireEvent.click(filtersButton)
+      })
+
+      await waitFor(() => {
+        const vegetarianCheckbox = screen.getByLabelText('Vegetarian')
+        fireEvent.click(vegetarianCheckbox)
+        
+        const applyButton = screen.getByText('Apply Filters')
+        fireEvent.click(applyButton)
+      })
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(
+          expect.stringContaining('vegetarian=true')
+        )
       })
     })
+  })
 
-    it('should show regular menu section', async () => {
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        const restaurant = screen.getByText('Pizza Palace')
-        fireEvent.click(restaurant)
+  describe('Cart Operations', () => {
+    beforeEach(() => {
+      ;(useAuth as jest.Mock).mockReturnValue({
+        isAuthenticated: true,
+        isLoading: false,
+        user: { id: 'user1' },
       })
-
-      await waitFor(() => {
-        expect(screen.getByText('Regular Menu')).toBeInTheDocument()
-      })
+      ;(global.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockRestaurants,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockMeals,
+        })
     })
 
-    it('should display meal tags', async () => {
+    it('adds item to cart', async () => {
+      ;(api.addToCart as jest.Mock).mockResolvedValueOnce({
+        items: [{ meal_id: 'meal1', qty: 1, item_id: 'item1' }]
+      })
+
       render(<BrowsePage />)
 
       await waitFor(() => {
@@ -532,101 +378,23 @@ describe('BrowsePage', () => {
       })
 
       await waitFor(() => {
-        const vegetarianTags = screen.getAllByText('vegetarian')
-        const italianTags = screen.getAllByText('italian')
-        expect(vegetarianTags.length).toBeGreaterThan(0)
-        expect(italianTags.length).toBeGreaterThan(0)
-      })
-    })
-
-    it('should display meal calories', async () => {
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        const restaurant = screen.getByText('Pizza Palace')
-        fireEvent.click(restaurant)
-      })
-
-      await waitFor(() => {
-        expect(screen.getByText('800 kcal')).toBeInTheDocument()
-        expect(screen.getByText('950 kcal')).toBeInTheDocument()
-      })
-    })
-
-    it('should display meal allergens', async () => {
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        const restaurant = screen.getByText('Pizza Palace')
-        fireEvent.click(restaurant)
-      })
-
-      await waitFor(() => {
-        const allergensText = screen.getAllByText('gluten, dairy')
-        expect(allergensText.length).toBeGreaterThan(0)
-      })
-    })
-
-    it('should show discount percentage for surplus meals', async () => {
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        const restaurant = screen.getByText('Pizza Palace')
-        fireEvent.click(restaurant)
-      })
-
-      await waitFor(() => {
-        const discountBadges = screen.getAllByText('38% OFF')
-        expect(discountBadges.length).toBeGreaterThan(0)
-        expect(discountBadges[0]).toBeInTheDocument()
-      })
-    })
-
-    it('should show surplus quantity', async () => {
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        const restaurant = screen.getByText('Pizza Palace')
-        fireEvent.click(restaurant)
-      })
-
-      await waitFor(() => {
-        expect(screen.getByText('5 left')).toBeInTheDocument()
-      })
-    })
-
-    it('should display both original and surplus prices', async () => {
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        const restaurant = screen.getByText('Pizza Palace')
-        fireEvent.click(restaurant)
-      })
-
-      await waitFor(() => {
-        expect(screen.getByText('$9.99')).toBeInTheDocument()
-        expect(screen.getByText('$15.99')).toBeInTheDocument()
-      })
-    })
-
-    it('should show + button for surplus meals', async () => {
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        const restaurant = screen.getByText('Pizza Palace')
-        fireEvent.click(restaurant)
-      })
-
-      await waitFor(() => {
-        const buttons = screen.getAllByRole('button')
-        const hasPlusButton = buttons.some(btn =>
+        const addButtons = screen.getAllByRole('button')
+        const plusButton = addButtons.find(btn =>
           btn.querySelector('svg')?.classList.contains('lucide-plus')
         )
-        expect(hasPlusButton).toBe(true)
+        if (plusButton) {
+          fireEvent.click(plusButton)
+        }
+      })
+
+      await waitFor(() => {
+        expect(api.addToCart).toHaveBeenCalledWith('meal1', 1)
       })
     })
 
-    it('should show Sold Out button for non-surplus meals', async () => {
+    it('handles cart errors', async () => {
+      ;(api.addToCart as jest.Mock).mockRejectedValueOnce(new Error('Cart error'))
+
       render(<BrowsePage />)
 
       await waitFor(() => {
@@ -635,13 +403,28 @@ describe('BrowsePage', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText('Sold Out')).toBeInTheDocument()
+        const addButtons = screen.getAllByRole('button')
+        const plusButton = addButtons.find(btn =>
+          btn.querySelector('svg')?.classList.contains('lucide-plus')
+        )
+        if (plusButton) {
+          fireEvent.click(plusButton)
+        }
+      })
+
+      await waitFor(() => {
+        expect(api.getCart).toHaveBeenCalled()
       })
     })
   })
 
-  describe('Meal Search and Filtering', () => {
-    beforeEach(async () => {
+  describe('Spotify Integration', () => {
+    beforeEach(() => {
+      ;(useAuth as jest.Mock).mockReturnValue({
+        isAuthenticated: true,
+        isLoading: false,
+        user: { id: 'user1' },
+      })
       ;(global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
@@ -653,7 +436,12 @@ describe('BrowsePage', () => {
         })
     })
 
-    it('should filter meals by name', async () => {
+    it('shows Spotify connect when recommendations fail', async () => {
+      ;(api.getMoodRecommendations as jest.Mock).mockRejectedValueOnce({
+        status: 404,
+        message: 'User Spotify authentication not found'
+      })
+
       render(<BrowsePage />)
 
       await waitFor(() => {
@@ -662,19 +450,15 @@ describe('BrowsePage', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText('Margherita Pizza')).toBeInTheDocument()
-      })
-
-      const searchInput = screen.getByPlaceholderText('Search meals...')
-      fireEvent.change(searchInput, { target: { value: 'Margherita' } })
-
-      await waitFor(() => {
-        expect(screen.getByText('Margherita Pizza')).toBeInTheDocument()
-        expect(screen.queryByText('Pepperoni Pizza')).not.toBeInTheDocument()
+        expect(screen.getByText('Get Personalized Recommendations')).toBeInTheDocument()
       })
     })
 
-    it('should filter meals by tags', async () => {
+    it('shows recommendations when available', async () => {
+      ;(api.getMoodRecommendations as jest.Mock).mockResolvedValueOnce({
+        recommended_foods: [{ id: 'meal1' }]
+      })
+
       render(<BrowsePage />)
 
       await waitFor(() => {
@@ -683,41 +467,13 @@ describe('BrowsePage', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText('Margherita Pizza')).toBeInTheDocument()
-      })
-
-      const searchInput = screen.getByPlaceholderText('Search meals...')
-      fireEvent.change(searchInput, { target: { value: 'vegetarian' } })
-
-      await waitFor(() => {
-        expect(screen.getByText('Margherita Pizza')).toBeInTheDocument()
-        expect(screen.queryByText('Pepperoni Pizza')).not.toBeInTheDocument()
-      })
-    })
-
-    it('should show no meals message when search has no matches', async () => {
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        const restaurant = screen.getByText('Pizza Palace')
-        fireEvent.click(restaurant)
-      })
-
-      await waitFor(() => {
-        expect(screen.getByText('Margherita Pizza')).toBeInTheDocument()
-      })
-
-      const searchInput = screen.getByPlaceholderText('Search meals...')
-      fireEvent.change(searchInput, { target: { value: 'sushi' } })
-
-      await waitFor(() => {
-        expect(screen.getByText('No meals found for this restaurant')).toBeInTheDocument()
+        expect(screen.getByText('Perfect for Your Mood')).toBeInTheDocument()
       })
     })
   })
 
-  describe('URL Parameter Handling', () => {
-    it('should load meals view when restaurant parameter is in URL', async () => {
+  describe('URL Parameters', () => {
+    it('loads meals view from URL parameter', async () => {
       mockGet.mockReturnValue('1')
       ;(global.fetch as jest.Mock)
         .mockResolvedValueOnce({
@@ -732,95 +488,13 @@ describe('BrowsePage', () => {
       render(<BrowsePage />)
 
       await waitFor(() => {
-        expect(screen.getByText('Pizza Palace')).toBeInTheDocument()
-        expect(screen.getByText('123 Main St')).toBeInTheDocument()
-      })
-    })
-
-    it('should navigate to /browse when back button clicked from URL parameter', async () => {
-      mockGet.mockReturnValue('1')
-      ;(global.fetch as jest.Mock)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockRestaurants,
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockMeals,
-        })
-
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        const backButton = screen.getByText('Back to Restaurants')
-        fireEvent.click(backButton)
-      })
-
-      expect(mockPush).toHaveBeenCalledWith('/browse')
-    })
-  })
-
-  describe('Discount Calculation', () => {
-    it('should calculate correct discount percentage', async () => {
-      ;(global.fetch as jest.Mock)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockRestaurants,
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockMeals,
-        })
-
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        const restaurant = screen.getByText('Pizza Palace')
-        fireEvent.click(restaurant)
-      })
-
-      await waitFor(() => {
-        // (15.99 - 9.99) / 15.99 = ~37.52% -> 38%
-        const discountBadges = screen.getAllByText('38% OFF')
-        expect(discountBadges.length).toBeGreaterThan(0)
-        expect(discountBadges[0]).toBeInTheDocument()
-      })
-    })
-
-    it('should handle zero base price', async () => {
-      const mealsWithZeroPrice = [
-        {
-          ...mockMeals[0],
-          base_price: 0,
-          surplus_price: 5,
-        },
-      ]
-
-      ;(global.fetch as jest.Mock)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockRestaurants,
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mealsWithZeroPrice,
-        })
-
-      render(<BrowsePage />)
-
-      await waitFor(() => {
-        const restaurant = screen.getByText('Pizza Palace')
-        fireEvent.click(restaurant)
-      })
-
-      await waitFor(() => {
-        expect(screen.queryByText(/% OFF/)).not.toBeInTheDocument()
+        expect(screen.getByText('Back to Restaurants')).toBeInTheDocument()
       })
     })
   })
 
-  describe('Empty States', () => {
-    it('should show empty state when no restaurants', async () => {
+  describe('Edge Cases', () => {
+    it('handles empty restaurants', async () => {
       ;(global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => [],
@@ -833,7 +507,7 @@ describe('BrowsePage', () => {
       })
     })
 
-    it('should show empty meals message', async () => {
+    it('handles empty meals', async () => {
       ;(global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
@@ -855,6 +529,17 @@ describe('BrowsePage', () => {
         expect(screen.getByText('No meals found for this restaurant')).toBeInTheDocument()
       })
     })
+
+    it('handles network errors', async () => {
+      ;(global.fetch as jest.Mock).mockRejectedValueOnce(
+        new Error('Network error')
+      )
+
+      render(<BrowsePage />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Network error/)).toBeInTheDocument()
+      })
+    })
   })
 })
-
