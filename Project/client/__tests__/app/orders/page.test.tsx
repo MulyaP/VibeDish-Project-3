@@ -28,6 +28,7 @@ jest.mock('@/lib/api', () => ({
   getOrder: jest.fn(),
   getOrderStatus: jest.fn(),
   cancelOrder: jest.fn(),
+  getOrderFeedback: jest.fn(),
 }))
 
 // Mock date-fns
@@ -362,6 +363,7 @@ describe('OrdersPage', () => {
       ;(api.getMyOrders as jest.Mock).mockResolvedValue(mockOrders)
       ;(api.getOrder as jest.Mock).mockResolvedValue(mockOrderDetails)
       ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockResolvedValue(null)
     })
 
     it('should expand order when details clicked', async () => {
@@ -665,6 +667,7 @@ describe('OrdersPage', () => {
       ;(api.getMyOrders as jest.Mock).mockResolvedValue(mockOrders)
       ;(api.getOrder as jest.Mock).mockResolvedValue(mockOrderDetails)
       ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockResolvedValue(null)
     })
 
     it('should display timeline when order expanded', async () => {
@@ -712,6 +715,10 @@ describe('OrdersPage', () => {
   })
 
   describe('Error Handling', () => {
+    beforeEach(() => {
+      jest.clearAllMocks()
+    })
+
     it('should show error message when orders fail to load', async () => {
       ;(api.getMyOrders as jest.Mock).mockRejectedValue(new Error('Network error'))
 
@@ -725,6 +732,8 @@ describe('OrdersPage', () => {
     it('should handle order details loading error', async () => {
       ;(api.getMyOrders as jest.Mock).mockResolvedValue(mockOrders)
       ;(api.getOrder as jest.Mock).mockRejectedValue(new Error('Failed to fetch order'))
+      ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockRejectedValue(new Error('No feedback'))
 
       render(<OrdersPage />)
 
@@ -735,6 +744,10 @@ describe('OrdersPage', () => {
 
       await waitFor(() => {
         expect(api.getOrder).toHaveBeenCalled()
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText(/Failed to fetch order/)).toBeInTheDocument()
       })
     })
   })
@@ -768,6 +781,7 @@ describe('OrdersPage', () => {
       ;(api.getMyOrders as jest.Mock).mockResolvedValue(mockOrders)
       ;(api.getOrder as jest.Mock).mockResolvedValue(mockOrderDetails)
       ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockResolvedValue(null)
 
       render(<OrdersPage />)
 

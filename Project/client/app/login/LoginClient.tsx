@@ -84,6 +84,7 @@ export default function LoginClient() {
       } else {
         router.push("/")
       }
+      router.refresh()
     } catch (error) {
       toast({
         title: "Error",

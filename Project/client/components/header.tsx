@@ -20,7 +20,7 @@ export function Header() {
         ]
       : []
     ),
-    ...(user?.role === "owner" ? [{ href: "/owner", label: "Dashboard" }, { href: "/owner/orders", label: "Orders" }] : []),
+    ...(user?.role === "owner" ? [{ href: "/owner/analytics", label: "Dashboard" }, { href: "/owner", label: "Meals" }, { href: "/owner/orders", label: "Orders" }] : []),
     ...(user?.role === "delivery_driver" ? [{ href: "/driver", label: "Nearby Orders" }, {href: '/driver/active', label: "Active Order"}] : []),
   ]
 
