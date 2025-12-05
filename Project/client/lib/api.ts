@@ -569,6 +569,21 @@ export async function deleteImageFromS3(imageUrl: string) {
   return response.json()
 }
 
+// ==================== OWNER ANALYTICS API ====================
+
+/**
+ * Get restaurant analytics data
+ */
+export async function getOwnerAnalytics() {
+  const response = await authenticatedFetch(`${API_BASE_URL}/owner/orders/analytics`)
+  
+  if (!response.ok) {
+    throw new Error("Failed to fetch analytics")
+  }
+  
+  return response.json()
+}
+
 // ==================== FEEDBACK API ====================
 
 /**

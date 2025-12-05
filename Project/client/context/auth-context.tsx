@@ -145,6 +145,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     localStorage.setItem("user", JSON.stringify(userData))
     setUser(userData)
+    
+    // Redirect based on role
+    if (role === "owner") {
+      window.location.href = "/owner/analytics"
+    }
   }
 
   const logout = async () => {
