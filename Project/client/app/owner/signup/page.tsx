@@ -157,7 +157,7 @@ export default function OwnerSignupPage() {
         title: "Success",
         description: "Restaurant account created successfully. Redirecting to dashboard...",
       })
-      router.push("/owner/analytics")
+      router.push("/login")
     } catch (error) {
       toast({
         title: "Error",
