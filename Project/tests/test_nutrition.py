@@ -18,7 +18,7 @@ class TestNutritionService:
         mock_response.status_code = 200
         mock_response.json.return_value = {"access_token": "test_token_123"}
         
-        with patch('httpx.AsyncClient') as mock_client:
+        with patch('app.services.nutrition_service.httpx.AsyncClient') as mock_client:
             mock_instance = MagicMock()
             mock_instance.post = AsyncMock(return_value=mock_response)
             mock_client.return_value.__aenter__.return_value = mock_instance
@@ -32,7 +32,7 @@ class TestNutritionService:
         mock_response = MagicMock()
         mock_response.status_code = 401
         
-        with patch('httpx.AsyncClient') as mock_client:
+        with patch('app.services.nutrition_service.httpx.AsyncClient') as mock_client:
             mock_instance = MagicMock()
             mock_instance.post = AsyncMock(return_value=mock_response)
             mock_client.return_value.__aenter__.return_value = mock_instance
@@ -61,7 +61,7 @@ class TestNutritionService:
             }
         }
         
-        with patch('httpx.AsyncClient') as mock_client:
+        with patch('app.services.nutrition_service.httpx.AsyncClient') as mock_client:
             mock_instance = MagicMock()
             mock_instance.post = AsyncMock(
                 side_effect=[mock_token_response, mock_nutrition_response]
@@ -112,7 +112,7 @@ class TestNutritionService:
             }
         }
         
-        with patch('httpx.AsyncClient') as mock_client:
+        with patch('app.services.nutrition_service.httpx.AsyncClient') as mock_client:
             mock_instance = MagicMock()
             mock_instance.post = AsyncMock(
                 side_effect=[mock_token_response, mock_empty_response, mock_nutrition_response]
