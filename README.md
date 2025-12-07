@@ -4,7 +4,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17549260.svg)](https://doi.org/10.5281/zenodo.17549260)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/pranshavpatel/CSC510-Section2-Group8/blob/main/LICENSE)
 
-[![Pull Requests](https://img.shields.io/github/issues-pr/pranshavpatel/CSC510-Section2-Group8)](https://github.com/pranshavpatel/CSC510-Section2-Group8/pulls)
+[![Pull Requests](https://img.shields.io/github/issues-pr/MulyaP/VibeDish-Project-3)](https://github.com/MulyaP/VibeDish-Project-3/pulls)
 [![GitHub contributors](https://img.shields.io/github/contributors/MulyaP/VibeDish-Project-3)](https://github.com/MulyaP/VibeDish-Project-3/graphs/contributors)
 [![GitHub last commit](https://img.shields.io/github/last-commit/MulyaP/VibeDish-Project-3)](https://github.com/MulyaP/VibeDish-Project-3/commits/main)
 [![Repo Size](https://img.shields.io/github/repo-size/MulyaP/VibeDish-Project-3)](https://github.com/MulyaP/VibeDish-Project-3)
