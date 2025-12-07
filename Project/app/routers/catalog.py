@@ -84,3 +84,19 @@ def list_meals_for_restaurant(
         ]
     
     return meals
+
+
+@router.get("/meals/{meal_id}/nutrition")
+async def get_meal_nutrition(meal_id: str):
+    from ..services.nutrition_service import NutritionService
+    
+    supabase = get_db()
+    response = supabase.table("meals").select("name").eq("id", meal_id).execute()
+    
+    if not response.data:
+        return {"error": "Meal not found"}
+    
+    meal_name = response.data[0]["name"]
+    nutrition_service = NutritionService()
+    
+    return await nutrition_service.get_nutrition_data(meal_name)
