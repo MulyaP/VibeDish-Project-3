@@ -210,7 +210,7 @@ export default function BrowsePage() {
     try {
       const response = await getMoodRecommendations(restaurantId)
       
-      if (response.recommended_foods && Array.isArray(response.recommended_foods)) {
+      if (response && response.recommended_foods && Array.isArray(response.recommended_foods)) {
         const matchedIds = response.recommended_foods
           .map((food: any) => food.id)
           .filter((id: string) => id)
@@ -227,7 +227,7 @@ export default function BrowsePage() {
     } catch (err: any) {
       console.error("Error fetching recommendations:", err)
       
-      if (err.status === 404 || err.message?.includes("User Spotify authentication not found")) {
+      if (err?.status === 404 || err?.message?.includes("User Spotify authentication not found")) {
         setShowSpotifyConnect(true)
       }
     } finally {
