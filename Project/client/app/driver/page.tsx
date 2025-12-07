@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MapView } from "@/components/map-view"
 import { MapPin, Package, User } from "lucide-react"
 import { acceptDeliveryOrder } from "@/lib/api"
+import { authenticatedFetch } from "@/context/auth-context"
 import { useToast } from "@/hooks/use-toast"
 
 interface ReadyOrder {
@@ -113,14 +114,13 @@ export default function DriverPage() {
             longitude: position.coords.longitude
           })
         },
-        (error) => {
-          console.error('Error getting location:', error)
+        () => {
           setUserLocation({ latitude: 35.7796, longitude: -78.6382 })
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
+          timeout: 5000,
+          maximumAge: 60000
         }
       )
     } else {
@@ -132,7 +132,7 @@ export default function DriverPage() {
     if (userLocation) {
       const fetchReadyOrders = async () => {
         try {
-          const response = await fetch(
+          const response = await authenticatedFetch(
             `${process.env.NEXT_PUBLIC_API_URL}/deliveries/ready?latitude=${userLocation.latitude}&longitude=${userLocation.longitude}`
           )
           if (response.ok) {

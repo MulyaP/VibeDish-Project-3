@@ -96,7 +96,7 @@ def create_order(payload: Dict[str, Any], user=Depends(current_user)):
 @router.get("/mine")
 def list_my_orders(user=Depends(current_user), limit: int = Query(default=50, le=100)):
     supabase = get_db()
-    response = supabase.table("orders").select("id,restaurant_id,restaurants(name),status,total,created_at").eq("user_id", user["id"]).order("created_at", desc=True).limit(limit).execute()
+    response = supabase.table("orders").select("id,restaurant_id,restaurants(name),status,total,created_at,delivery_code").eq("user_id", user["id"]).order("created_at", desc=True).limit(limit).execute()
     return response.data
 
 @router.get("/{order_id}")
@@ -176,3 +176,30 @@ def complete_order(order_id: str, user=Depends(current_user)):
     if not _is_user_staff_for_order(user["id"], order_id):
         raise HTTPException(status_code=403, detail="not allowed")
     return _transition_order(order_id, "completed")
+
+@router.patch("/{order_id}/status")
+def update_order_status(order_id: str, payload: Dict[str, Any], user=Depends(current_user)):
+    status = payload.get("status")
+    delivery_code = payload.get("delivery_code")
+    
+    supabase = get_db()
+    order_response = supabase.table("orders").select("*").eq("id", order_id).execute()
+    if not order_response.data:
+        raise HTTPException(status_code=404, detail="order not found")
+    
+    order = order_response.data[0]
+    
+    if str(order["delivery_user_id"]) != str(user["id"]):
+        raise HTTPException(status_code=403, detail="not authorized")
+    
+    if status == "delivered":
+        if not delivery_code:
+            raise HTTPException(status_code=400, detail="delivery code required")
+        if delivery_code != order.get("delivery_code"):
+            raise HTTPException(status_code=400, detail="invalid delivery code")
+    
+    supabase.table("orders").update({"status": status}).eq("id", order_id).execute()
+    supabase.table("order_status_events").insert({"order_id": order_id, "status": status}).execute()
+    
+    updated = supabase.table("orders").select("*").eq("id", order_id).execute()
+    return updated.data[0]
