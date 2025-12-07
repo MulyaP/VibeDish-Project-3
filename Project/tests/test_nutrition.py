@@ -19,7 +19,9 @@ class TestNutritionService:
         mock_response.json.return_value = {"access_token": "test_token_123"}
         
         with patch('httpx.AsyncClient') as mock_client:
-            mock_client.return_value.__aenter__.return_value.post = AsyncMock(return_value=mock_response)
+            mock_instance = MagicMock()
+            mock_instance.post = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value = mock_instance
             token = await nutrition_service._get_access_token()
             
             assert token == "test_token_123"
@@ -31,7 +33,9 @@ class TestNutritionService:
         mock_response.status_code = 401
         
         with patch('httpx.AsyncClient') as mock_client:
-            mock_client.return_value.__aenter__.return_value.post = AsyncMock(return_value=mock_response)
+            mock_instance = MagicMock()
+            mock_instance.post = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value = mock_instance
             token = await nutrition_service._get_access_token()
             
             assert token is None
@@ -58,9 +62,11 @@ class TestNutritionService:
         }
         
         with patch('httpx.AsyncClient') as mock_client:
-            mock_client.return_value.__aenter__.return_value.post = AsyncMock(
+            mock_instance = MagicMock()
+            mock_instance.post = AsyncMock(
                 side_effect=[mock_token_response, mock_nutrition_response]
             )
+            mock_client.return_value.__aenter__.return_value = mock_instance
             
             result = await nutrition_service.get_nutrition_data("Chicken Breast")
             
@@ -89,6 +95,10 @@ class TestNutritionService:
         mock_token_response.status_code = 200
         mock_token_response.json.return_value = {"access_token": "test_token"}
         
+        mock_empty_response = MagicMock()
+        mock_empty_response.status_code = 200
+        mock_empty_response.json.return_value = {"foods": {}}
+        
         mock_nutrition_response = MagicMock()
         mock_nutrition_response.status_code = 200
         mock_nutrition_response.json.return_value = {
@@ -103,9 +113,11 @@ class TestNutritionService:
         }
         
         with patch('httpx.AsyncClient') as mock_client:
-            mock_client.return_value.__aenter__.return_value.post = AsyncMock(
-                side_effect=[mock_token_response, MagicMock(status_code=200, json=lambda: {"foods": {}}), mock_nutrition_response]
+            mock_instance = MagicMock()
+            mock_instance.post = AsyncMock(
+                side_effect=[mock_token_response, mock_empty_response, mock_nutrition_response]
             )
+            mock_client.return_value.__aenter__.return_value = mock_instance
             
             result = await nutrition_service.get_nutrition_data("Buffalo Chicken Wrap")
             
