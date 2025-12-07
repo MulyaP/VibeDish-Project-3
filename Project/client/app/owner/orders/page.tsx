@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Package, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
-import { getOwnerOrders, updateOrderStatus } from "@/lib/api"
+import { getOwnerOrders, updateOrderStatus, updateOwnerOrderStatus } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 
 interface Order {
@@ -71,7 +71,7 @@ export default function OwnerOrdersPage() {
 
   const handleAccept = async (orderId: string) => {
     try {
-      await updateOrderStatus(orderId, "accepted")
+      await updateOwnerOrderStatus(orderId, "accepted")
       toast({
         title: "Success",
         description: "Order accepted"
@@ -88,7 +88,7 @@ export default function OwnerOrdersPage() {
 
   const handleReject = async (orderId: string) => {
     try {
-      await updateOrderStatus(orderId, "rejected")
+      await updateOwnerOrderStatus(orderId, "rejected")
       toast({
         title: "Success",
         description: "Order rejected"
@@ -105,7 +105,7 @@ export default function OwnerOrdersPage() {
 
   const handleMarkReady = async (orderId: string) => {
     try {
-      await updateOrderStatus(orderId, "ready")
+      await updateOwnerOrderStatus(orderId, "ready")
       toast({
         title: "Success",
         description: "Order marked as ready"

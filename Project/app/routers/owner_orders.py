@@ -110,13 +110,22 @@ def get_restaurant_analytics(user=Depends(current_user)):
     restaurant_name = staff_response.data[0]["restaurants"]["name"]
 
     # Get all orders for the restaurant
-    orders_response = supabase.table("orders").select(
-        "id, user_id, total, restaurant_rating, restaurant_comment, created_at"
-    ).eq("restaurant_id", restaurant_id).execute()
+    orders_response = (
+        supabase.table("orders")
+        .select(
+        "id, user_id, total, restaurant_rating, restaurant_comment, created_at, delivery_fee, tip_amount, tax"
+        )
+        .eq("restaurant_id", restaurant_id)
+        .in_("status", ["delivered", "completed"])
+        .execute()
+    )
 
     orders = orders_response.data
     total_orders = len(orders)
-    total_revenue = sum(order["total"] for order in orders)
+    total_revenue = sum(
+        order["total"] - (order.get("delivery_fee", 0) or 0) - (order.get("tip_amount", 0) or 0) - (order.get("tax", 0) or 0)
+        for order in orders
+    )
     avg_order_value = round(total_revenue / total_orders, 2) if total_orders > 0 else 0
 
     # Calculate average rating
@@ -135,9 +144,16 @@ def get_restaurant_analytics(user=Depends(current_user)):
     repeat_customer_ratio = round((repeat_customers / unique_customers * 100), 0) if unique_customers > 0 else 0
 
     # Get popular dishes
-    order_items_response = supabase.table("order_items").select(
-        "meal_id, qty, price, meals(name, image_link)"
-    ).in_("order_id", [order["id"] for order in orders]).execute()
+    order_items_response = (
+        supabase.table("order_items")
+        .select(
+            "meal_id, qty, price, meals(name, image_link), order_id"
+        )
+        .in_("order_id", [order["id"] for order in orders])
+        .execute()
+    )
+
+    print(order_items_response)
 
     meal_stats = {}
     for item in order_items_response.data:
@@ -149,8 +165,8 @@ def get_restaurant_analytics(user=Depends(current_user)):
                 "orders": 0,
                 "revenue": 0
             }
-        meal_stats[meal_id]["orders"] += item["qty"]
-        meal_stats[meal_id]["revenue"] += item["price"] * item["qty"]
+        meal_stats[meal_id]["orders"] += 1
+        meal_stats[meal_id]["revenue"] += item["price"]
 
     popular_dishes = sorted(
         [{"id": k, **v, "revenue": round(v.get("revenue", 0), 2)} for k, v in meal_stats.items()],

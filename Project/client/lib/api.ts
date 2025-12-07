@@ -482,12 +482,34 @@ export async function getOwnerOrders() {
 }
 
 /**
- * Update order status
+ * Update order status (for owners)
  */
-export async function updateOrderStatus(orderId: string, status: string) {
+export async function updateOwnerOrderStatus(orderId: string, status: string) {
   const response = await authenticatedFetch(`${API_BASE_URL}/owner/orders/${orderId}/status`, {
     method: "PATCH",
     body: JSON.stringify({ status }),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || "Failed to update order status")
+  }
+  
+  return response.json()
+}
+
+/**
+ * Update order status (for drivers)
+ */
+export async function updateOrderStatus(orderId: string, status: string, deliveryCode?: string) {
+  const body: any = { status }
+  if (deliveryCode) {
+    body.delivery_code = deliveryCode
+  }
+  
+  const response = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
   })
   
   if (!response.ok) {

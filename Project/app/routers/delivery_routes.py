@@ -224,6 +224,7 @@ async def fetch_active_orders(user = Depends(current_user)):
 async def accept_delivery_order(order_id: str, user = Depends(current_user)):
     """Accept a delivery order and assign it to the driver"""
     try:
+        import random
         supabase = get_db()
         
         # Check if driver already has an active order
@@ -242,9 +243,12 @@ async def accept_delivery_order(order_id: str, user = Depends(current_user)):
         if order["delivery_user_id"] is not None:
             raise HTTPException(status_code=400, detail="Order already assigned to another driver")
         
+        delivery_code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+        
         supabase.table("orders").update({
             "delivery_user_id": user["id"],
-            "status": "assigned"
+            "status": "assigned",
+            "delivery_code": delivery_code
         }).eq("id", order_id).execute()
         
         supabase.table("order_status_events").insert({

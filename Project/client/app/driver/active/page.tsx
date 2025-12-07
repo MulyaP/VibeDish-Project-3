@@ -9,6 +9,15 @@ import { authenticatedFetch } from "@/context/auth-context"
 import { updateOrderStatus } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import dynamic from "next/dynamic"
+import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 const RouteMap = dynamic(() => import("@/components/route-map").then(mod => mod.RouteMap), { ssr: false })
 
@@ -40,6 +49,8 @@ export default function ActiveOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null)
   const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set())
+  const [deliveryCodeModal, setDeliveryCodeModal] = useState<{ open: boolean; orderId: string } | null>(null)
+  const [inputCode, setInputCode] = useState("")
   const { toast } = useToast()
 
   useEffect(() => {
@@ -83,14 +94,19 @@ export default function ActiveOrdersPage() {
   }
 
   const handleStatusUpdate = async (orderId: string, currentStatus: string) => {
+    if (currentStatus === "out-for-delivery") {
+      setDeliveryCodeModal({ open: true, orderId })
+      setInputCode("")
+      return
+    }
+    
     setUpdatingOrders(prev => new Set(prev).add(orderId))
     try {
-      const newStatus = currentStatus === "assigned" ? "out-for-delivery" : "delivered"
-      await updateOrderStatus(orderId, newStatus)
+      await updateOrderStatus(orderId, "out-for-delivery")
       
       toast({
         title: "Status Updated",
-        description: `Order marked as ${newStatus === "out-for-delivery" ? "picked up" : "delivered"}`
+        description: "Order marked as picked up"
       })
       
       await fetchActiveOrders()
@@ -104,6 +120,36 @@ export default function ActiveOrdersPage() {
       setUpdatingOrders(prev => {
         const next = new Set(prev)
         next.delete(orderId)
+        return next
+      })
+    }
+  }
+
+  const handleDeliveryCodeSubmit = async () => {
+    if (!deliveryCodeModal) return
+    
+    setUpdatingOrders(prev => new Set(prev).add(deliveryCodeModal.orderId))
+    try {
+      await updateOrderStatus(deliveryCodeModal.orderId, "delivered", inputCode)
+      
+      toast({
+        title: "Status Updated",
+        description: "Order marked as delivered"
+      })
+      
+      setDeliveryCodeModal(null)
+      setInputCode("")
+      await fetchActiveOrders()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update status",
+        variant: "destructive"
+      })
+    } finally {
+      setUpdatingOrders(prev => {
+        const next = new Set(prev)
+        next.delete(deliveryCodeModal.orderId)
         return next
       })
     }
@@ -217,6 +263,42 @@ export default function ActiveOrdersPage() {
           ))}
         </div>
       )}
+
+      <Dialog open={deliveryCodeModal?.open || false} onOpenChange={(open) => !open && setDeliveryCodeModal(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enter Delivery Code</DialogTitle>
+            <DialogDescription>
+              Please enter the 6-digit delivery code to confirm delivery
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              type="text"
+              placeholder="Enter 6-digit code"
+              value={inputCode}
+              onChange={(e) => setInputCode(e.target.value)}
+              maxLength={6}
+              className="text-center text-lg font-mono"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeliveryCodeModal(null)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleDeliveryCodeSubmit}
+              disabled={inputCode.length !== 6 || updatingOrders.has(deliveryCodeModal?.orderId || "")}
+            >
+              {updatingOrders.has(deliveryCodeModal?.orderId || "") ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Confirm Delivery"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

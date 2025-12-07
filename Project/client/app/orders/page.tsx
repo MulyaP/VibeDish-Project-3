@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Package, Loader2, ChevronDown, ChevronUp, Clock, CheckCircle2, XCircle, ChefHat, PackageCheck, Truck, MessageSquare, Store } from "lucide-react"
+import { Package, Loader2, ChevronDown, ChevronUp, Clock, CheckCircle2, XCircle, ChefHat, PackageCheck, Truck, MessageSquare, Store, Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { getMyOrders, getOrder, getOrderStatus, cancelOrder, getOrderFeedback } from "@/lib/api"
 import { FeedbackModal } from "@/components/feedback-modal"
@@ -56,6 +56,7 @@ interface OrderDetails {
     status: string
     total: number
     created_at: string
+    delivery_code: string
   }
   items: OrderItem[]
 }
@@ -148,6 +149,7 @@ export default function OrdersPage() {
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
   const [selectedOrderForFeedback, setSelectedOrderForFeedback] = useState<Order | null>(null)
   const [orderFeedbacks, setOrderFeedbacks] = useState<Record<string, any>>({})
+  const [visibleCodes, setVisibleCodes] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -477,6 +479,40 @@ export default function OrdersPage() {
                         </div>
 
                         <Separator />
+
+                        {/* Pickup Code */}
+                        {(order.status === 'assigned' || order.status === 'out-for-delivery') && details.order.delivery_code && (
+                          <>
+                            <div>
+                              <h3 className="font-semibold mb-2">Pickup Code</h3>
+                              <div className="flex items-center gap-3">
+                                <code className="flex-1 bg-muted px-3 py-2 rounded text-lg font-mono">
+                                  {visibleCodes.has(order.id) ? details.order.delivery_code : '••••••'}
+                                </code>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setVisibleCodes(prev => {
+                                    const next = new Set(prev)
+                                    if (next.has(order.id)) {
+                                      next.delete(order.id)
+                                    } else {
+                                      next.add(order.id)
+                                    }
+                                    return next
+                                  })}
+                                >
+                                  {visibleCodes.has(order.id) ? (
+                                    <><EyeOff className="h-4 w-4 mr-1" />Hide</>
+                                  ) : (
+                                    <><Eye className="h-4 w-4 mr-1" />Show</>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                            <Separator />
+                          </>
+                        )}
 
                         {/* Order Timeline */}
                         {timeline && timeline.timeline.length > 0 && (
