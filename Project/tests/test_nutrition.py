@@ -9,7 +9,10 @@ class TestNutritionService:
     @pytest.fixture
     def nutrition_service(self):
         """Create a NutritionService instance"""
-        return NutritionService()
+        service = NutritionService()
+        service.client_id = "test_client_id"
+        service.client_secret = "test_client_secret"
+        return service
 
     @pytest.mark.asyncio
     async def test_get_access_token_success(self, nutrition_service):
