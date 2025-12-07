@@ -34,6 +34,9 @@ jest.mock('@/lib/api', () => ({
 // Mock date-fns
 jest.mock('date-fns', () => ({
   format: (date: Date, formatStr: string) => {
+    if (isNaN(date.getTime())) {
+      throw new RangeError('Invalid time value')
+    }
     if (formatStr.includes('MMM dd, yyyy')) {
       return 'Jan 01, 2024'
     }
@@ -962,8 +965,9 @@ describe('OrdersPage', () => {
         expect(screen.getByText('123456')).toBeInTheDocument()
       })
 
-      const hideButton = screen.getByText('Hide')
-      fireEvent.click(hideButton)
+      const hideButtons = screen.getAllByText('Hide')
+      // The second hide button is the one for pickup code (first one is for collapsing the order card)
+      fireEvent.click(hideButtons[1])
 
       await waitFor(() => {
         expect(screen.getByText('••••••')).toBeInTheDocument()

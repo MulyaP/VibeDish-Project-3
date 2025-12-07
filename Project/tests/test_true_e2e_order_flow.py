@@ -32,13 +32,14 @@ def shared_supabase_mock():
         "orders": {},
         "order_status_events": {},
         "meals": {
-            MEAL_ID: {"id": MEAL_ID, "restaurant_id": RESTAURANT_ID, "quantity": 10, "surplus_price": 9.99, "base_price": 15.99}
+            MEAL_ID: {"id": MEAL_ID, "restaurant_id": RESTAURANT_ID, "quantity": 10, "surplus_price": 9.99, "base_price": 15.99, "name": "Test Meal"}
         },
         "restaurants": {
             RESTAURANT_ID: {"id": RESTAURANT_ID, "name": "E2E Restaurant", "latitude": 40.7128, "longitude": -74.0060}
         },
         "staff": {STAFF_ID: {"user_id": STAFF_ID, "restaurant_id": RESTAURANT_ID}},
-        "feedbacks": {}
+        "feedbacks": {},
+        "order_items": {}
     }
     
     def table_mock(table_name):
@@ -92,8 +93,15 @@ def shared_supabase_mock():
                         result.data = driver_orders
                     
                     # Restaurant staff
-                    elif table_name == "restaurant_staff":
+                    elif table_name == "restaurant_staff" and field == "restaurant_id":
+                        result.data = [s for s in state["staff"].values() if s["restaurant_id"] == value]
+                    
+                    elif table_name == "restaurant_staff" and field == "user_id":
                         result.data = [state["staff"].get(value)] if value in state["staff"] else []
+
+                    # Restaurants
+                    elif table_name == "restaurants" and field == "id":
+                        result.data = [state["restaurants"].get(value)] if value in state["restaurants"] else []
                     
                     # Order status events
                     elif table_name == "order_status_events" and field == "order_id":
@@ -106,6 +114,17 @@ def shared_supabase_mock():
                         
                         result.data = events
                     
+                    # Order items
+                    elif table_name == "order_items" and field == "order_id":
+                        items = state.get("order_items", {}).get(value, [])
+                        # Need to join with meals
+                        items_with_meals = []
+                        for item in items:
+                            item_copy = item.copy()
+                            item_copy["meals"] = state["meals"].get(item["meal_id"], {})
+                            items_with_meals.append(item_copy)
+                        result.data = items_with_meals
+
                     else:
                         result.data = []
                     
@@ -122,6 +141,9 @@ def shared_supabase_mock():
                         if table_name == "cart_items":
                             result.data = [item for item in state["cart_items"] 
                                          if item.get(field) == value and item.get(field2) == value2]
+                        elif table_name == "restaurant_staff":
+                            result.data = [s for s in state["staff"].values() 
+                                         if s.get(field) == value and s.get(field2) == value2]
                         else:
                             result.data = []
                         return result
@@ -130,6 +152,30 @@ def shared_supabase_mock():
                     return eq2_chain
                 
                 eq_chain.eq = eq2_mock
+
+                # Support in_() chaining
+                def in_mock(field2, values2):
+                    in_chain = Mock()
+                    def execute_in_mock():
+                        result_in = Mock()
+                        if table_name == "orders" and field == "delivery_user_id":
+                             first_result_data = [o for o in state["orders"].values() if o.get("delivery_user_id") == value]
+                             result_in.data = [o for o in first_result_data if o.get(field2) in values2]
+                        else:
+                            result_in.data = []
+                        return result_in
+                    in_chain.execute = execute_in_mock
+                    return in_chain
+                
+                eq_chain.in_ = in_mock
+
+                # Handle order() chaining for order_status_events
+                if table_name == "order_status_events" and field == "order_id":
+                    events = state["order_status_events"].get(value, [])
+                    order_chain = Mock()
+                    order_chain.execute.return_value.data = events
+                    eq_chain.order = Mock(return_value=order_chain)
+
                 return eq_chain
             
             chain.eq = eq_mock
@@ -142,6 +188,8 @@ def shared_supabase_mock():
                 result = Mock()
                 
                 if table_name == "cart_items":
+                    if "id" not in data:
+                        data["id"] = f"cart-item-{len(state['cart_items']) + 1}"
                     state["cart_items"].append(data)
                     result.data = [data]
                 
@@ -159,6 +207,19 @@ def shared_supabase_mock():
                     state["order_status_events"][order_id].append(data)
                     result.data = [data]
                 
+                elif table_name == "order_items":
+                    order_id = data["order_id"]
+                    if "order_items" not in state:
+                        state["order_items"] = {}
+                    if order_id not in state["order_items"]:
+                        state["order_items"][order_id] = []
+                    
+                    if "id" not in data:
+                        data["id"] = f"order-item-{len(state['order_items'][order_id]) + 1}"
+                    
+                    state["order_items"][order_id].append(data)
+                    result.data = [data]
+
                 else:
                     result.data = [data]
                 
