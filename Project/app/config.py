@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     AWS_REGION: str = "auto"
     S3_BUCKET_NAME: Optional[str] = None
 
+    # FatSecret API Configuration
+    FATSECRET_CLIENT_ID: Optional[str] = None
+    FATSECRET_CLIENT_SECRET: Optional[str] = None
+
+
+
     # Derived (not read from env)
     ASYNC_DATABASE_URL: Optional[str] = None  # computed from DATABASE_URL
 

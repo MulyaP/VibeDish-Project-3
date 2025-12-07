@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { MapPin, Search, Store, ArrowLeft, UtensilsCrossed, Loader2, Plus, Minus, Music, Sparkles, Filter } from "lucide-react"
+import { NutritionFacts } from "@/components/nutrition-facts"
 import { useAuth } from "@/context/auth-context"
 import { addToCart, getCart, updateCartItem, removeFromCart, getMoodRecommendations, checkSpotifyStatus, initiateSpotifyLogin } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
@@ -683,10 +684,6 @@ export default function BrowsePage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Calories:</span>
-                        <span className="font-medium">{meal.calories} kcal</span>
-                      </div>
                       <div className="flex items-start justify-between gap-2">
                         <span className="text-muted-foreground">Allergens:</span>
                         {meal.allergens?.length > 0 ? (
@@ -708,61 +705,65 @@ export default function BrowsePage() {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      {hasSurplus && hasSurplusPrice && meal.surplus_price! < meal.base_price ? (
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-bold text-primary">
-                            ${meal.surplus_price!.toFixed(2)}
-                          </span>
-                          <span className="text-sm text-muted-foreground line-through">
+                    <div className="space-y-3 pt-2 border-t">
+                      <div className="flex items-center justify-between">
+                        {hasSurplus && hasSurplusPrice && meal.surplus_price! < meal.base_price ? (
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-bold text-primary">
+                              ${meal.surplus_price!.toFixed(2)}
+                            </span>
+                            <span className="text-sm text-muted-foreground line-through">
+                              ${meal.base_price.toFixed(2)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-2xl font-bold">
                             ${meal.base_price.toFixed(2)}
                           </span>
-                        </div>
-                      ) : (
-                        <span className="text-2xl font-bold">
-                          ${meal.base_price.toFixed(2)}
-                        </span>
-                      )}
-                      
-                      {!hasSurplus ? (
-                        <Button size="sm" disabled>
-                          Sold Out
-                        </Button>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          {currentQty > 0 && (
+                        )}
+                        
+                        {!hasSurplus ? (
+                          <Button size="sm" disabled>
+                            Sold Out
+                          </Button>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            {currentQty > 0 && (
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-9 w-9"
+                                onClick={() => handleQuantityChange(meal.id, meal.name, currentQty - 1, meal.quantity)}
+                                disabled={isUpdating}
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                            )}
+                            
+                            {currentQty > 0 && (
+                              <div className="min-w-[2rem] text-center">
+                                <span className="font-semibold text-lg">{currentQty}</span>
+                              </div>
+                            )}
+                            
                             <Button
-                              variant="outline"
+                              variant={currentQty > 0 ? "outline" : "default"}
                               size="icon"
                               className="h-9 w-9"
-                              onClick={() => handleQuantityChange(meal.id, meal.name, currentQty - 1, meal.quantity)}
-                              disabled={isUpdating}
+                              onClick={() => handleQuantityChange(meal.id, meal.name, currentQty + 1, meal.quantity)}
+                              disabled={isUpdating || currentQty >= meal.quantity}
                             >
-                              <Minus className="h-4 w-4" />
+                              {isUpdating ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Plus className="h-4 w-4" />
+                              )}
                             </Button>
-                          )}
-                          
-                          {currentQty > 0 && (
-                            <div className="min-w-[2rem] text-center">
-                              <span className="font-semibold text-lg">{currentQty}</span>
-                            </div>
-                          )}
-                          
-                          <Button
-                            variant={currentQty > 0 ? "outline" : "default"}
-                            size="icon"
-                            className="h-9 w-9"
-                            onClick={() => handleQuantityChange(meal.id, meal.name, currentQty + 1, meal.quantity)}
-                            disabled={isUpdating || currentQty >= meal.quantity}
-                          >
-                            {isUpdating ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Plus className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                      )}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <NutritionFacts mealId={meal.id} mealName={meal.name} />
                     </div>
                   </CardContent>
                 </Card>
