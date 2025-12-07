@@ -292,6 +292,7 @@ class TestTrueE2EOrderFlow:
     @patch("app.routers.delivery_routes.get_db")
     @patch("app.routers.feedback.get_db")
     @patch("requests.get")
+    @patch.dict("os.environ", {"MAPBOX_TOKEN": "test_token"})
     def test_complete_order_lifecycle(self, mock_requests, mock_feedback_db, mock_delivery_db, 
                                       mock_orders_db, mock_cart_db, shared_supabase_mock):
         """
