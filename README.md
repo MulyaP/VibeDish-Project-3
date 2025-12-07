@@ -1,13 +1,14 @@
-[![CI/CD Pipeline](https://github.com/pranshavpatel/CSC510-Section2-Group8/actions/workflows/ci.yml/badge.svg)](https://github.com/pranshavpatel/CSC510-Section2-Group8/actions/workflows/ci.yml)
+[![CI/CD Pipeline](https://github.com/MulyaP/VibeDish-Project-3/actions/workflows/ci.yml/badge.svg)](https://github.com/MulyaP/VibeDish-Project-3/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/github/pranshavpatel/CSC510-Section2-Group8/graph/badge.svg)](https://codecov.io/github/pranshavpatel/CSC510-Section2-Group8)
-[![Issues](https://img.shields.io/github/issues/pranshavpatel/CSC510-Section2-Group8)](https://github.com/pranshavpatel/CSC510-Section2-Group8/issues)
+[![GitHub issues](https://img.shields.io/github/issues/MulyaP/VibeDish-Project-3)](https://github.com/MulyaP/VibeDish-Project-3/issues)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17549260.svg)](https://doi.org/10.5281/zenodo.17549260)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/pranshavpatel/CSC510-Section2-Group8/blob/main/LICENSE)
 
 [![Pull Requests](https://img.shields.io/github/issues-pr/pranshavpatel/CSC510-Section2-Group8)](https://github.com/pranshavpatel/CSC510-Section2-Group8/pulls)
-[![Contributors](https://img.shields.io/github/contributors/pranshavpatel/CSC510-Section2-Group8)](https://github.com/pranshavpatel/CSC510-Section2-Group8/graphs/contributors)
-[![Last Commit](https://img.shields.io/github/last-commit/pranshavpatel/CSC510-Section2-Group8)](https://github.com/pranshavpatel/CSC510-Section2-Group8/commits/main)
-[![Repo Size](https://img.shields.io/github/repo-size/pranshavpatel/CSC510-Section2-Group8)](https://github.com/pranshavpatel/CSC510-Section2-Group8)
+[![GitHub contributors](https://img.shields.io/github/contributors/MulyaP/VibeDish-Project-3)](https://github.com/MulyaP/VibeDish-Project-3/graphs/contributors)
+[![GitHub last commit](https://img.shields.io/github/last-commit/MulyaP/VibeDish-Project-3)](https://github.com/MulyaP/VibeDish-Project-3/commits/main)
+[![Repo Size](https://img.shields.io/github/repo-size/MulyaP/VibeDish-Project-3)](https://github.com/MulyaP/VibeDish-Project-3)
+
 <!-- Frontend Code Quality Tool Badges -->
 [![Code Style: Prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
 [![Type Checker: TypeScript](https://img.shields.io/badge/type_checker-typescript-blue)](https://www.typescriptlang.org/)
