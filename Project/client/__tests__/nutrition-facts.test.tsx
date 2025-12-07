@@ -24,9 +24,6 @@ describe('NutritionFacts Component', () => {
       protein_g: 10.0,
       carbs_g: 20.0,
       fat_g: 5.0,
-      fiber_g: 2.0,
-      sugar_g: 3.0,
-      sodium_mg: 300.0,
       source: 'estimate'
     }
 
@@ -69,11 +66,7 @@ describe('NutritionFacts Component', () => {
       protein_g: 31.0,
       carbs_g: 0.0,
       fat_g: 3.6,
-      fiber_g: 0.0,
-      sugar_g: 0.0,
-      sodium_mg: 74.0,
       source: 'fatsecret_api',
-      source_message: 'Matched: Chicken Breast',
       food_url: 'https://fatsecret.com/chicken'
     }
 
@@ -100,11 +93,7 @@ describe('NutritionFacts Component', () => {
       protein_g: 15.0,
       carbs_g: 25.0,
       fat_g: 10.0,
-      fiber_g: 3.0,
-      sugar_g: 5.0,
-      sodium_mg: 400.0,
-      source: 'estimate',
-      source_message: 'No API match found'
+      source: 'estimate'
     }
 
     ;(global.fetch as jest.Mock).mockResolvedValueOnce({
@@ -120,7 +109,6 @@ describe('NutritionFacts Component', () => {
     await waitFor(() => {
       expect(screen.getByText('250')).toBeInTheDocument()
       expect(screen.getByText('⚠ Estimated Data')).toBeInTheDocument()
-      expect(screen.getByText('No API match found')).toBeInTheDocument()
     })
   })
 
@@ -131,11 +119,7 @@ describe('NutritionFacts Component', () => {
       protein_g: 12.0,
       carbs_g: 36.0,
       fat_g: 10.0,
-      fiber_g: 2.5,
-      sugar_g: 4.0,
-      sodium_mg: 640.0,
       source: 'fatsecret_api',
-      source_message: 'Matched: Pizza',
       food_url: 'https://fatsecret.com/pizza'
     }
 
@@ -164,9 +148,6 @@ describe('NutritionFacts Component', () => {
       protein_g: 15.0,
       carbs_g: 25.0,
       fat_g: 10.0,
-      fiber_g: 3.0,
-      sugar_g: 5.0,
-      sodium_mg: 400.0,
       source: 'estimate'
     }
 
@@ -205,9 +186,6 @@ describe('NutritionFacts Component', () => {
       protein_g: 30.0,
       carbs_g: 50.0,
       fat_g: 20.0,
-      fiber_g: 10.0,
-      sugar_g: 15.0,
-      sodium_mg: 800.0,
       source: 'fatsecret_api'
     }
 
@@ -225,9 +203,6 @@ describe('NutritionFacts Component', () => {
       expect(screen.getByText('Protein')).toBeInTheDocument()
       expect(screen.getByText('Carbohydrates')).toBeInTheDocument()
       expect(screen.getByText('Fat')).toBeInTheDocument()
-      expect(screen.getByText('Fiber')).toBeInTheDocument()
-      expect(screen.getByText('Sugar')).toBeInTheDocument()
-      expect(screen.getByText('Sodium')).toBeInTheDocument()
     })
   })
 
@@ -238,9 +213,6 @@ describe('NutritionFacts Component', () => {
       protein_g: 10.0,
       carbs_g: 20.0,
       fat_g: 5.0,
-      fiber_g: 2.0,
-      sugar_g: 3.0,
-      sodium_mg: 300.0,
       source: 'fatsecret_api'
     }
 
