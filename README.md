@@ -1,5 +1,5 @@
 [![CI/CD Pipeline](https://github.com/MulyaP/VibeDish-Project-3/actions/workflows/ci.yml/badge.svg)](https://github.com/MulyaP/VibeDish-Project-3/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/github/pranshavpatel/CSC510-Section2-Group8/graph/badge.svg)](https://codecov.io/github/pranshavpatel/CSC510-Section2-Group8)
+[![codecov](https://codecov.io/github/MulyaP/VibeDish-Project-3/graph/badge.svg?token=XCZ40C1SHT)](https://codecov.io/github/MulyaP/VibeDish-Project-3)
 [![GitHub issues](https://img.shields.io/github/issues/MulyaP/VibeDish-Project-3)](https://github.com/MulyaP/VibeDish-Project-3/issues)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17549260.svg)](https://doi.org/10.5281/zenodo.17549260)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/MulyaP/VibeDish-Project-3/blob/main/LICENSE)
