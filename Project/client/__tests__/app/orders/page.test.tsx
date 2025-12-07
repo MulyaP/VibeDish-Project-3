@@ -797,5 +797,399 @@ describe('OrdersPage', () => {
       })
     })
   })
+
+  describe('Feedback Modal', () => {
+    it('should show feedback button for delivered orders', async () => {
+      const deliveredOrder = { ...mockOrders[0], status: 'delivered' }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([deliveredOrder])
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Feedback')).toBeInTheDocument()
+      })
+    })
+
+    it('should not show feedback button for pending orders', async () => {
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([mockOrders[0]])
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText('Feedback')).not.toBeInTheDocument()
+      })
+    })
+
+    it('should show Add Feedback when partial feedback exists', async () => {
+      const deliveredOrder = { ...mockOrders[0], status: 'delivered' }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([deliveredOrder])
+      ;(api.getOrder as jest.Mock).mockResolvedValue(mockOrderDetails)
+      ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockResolvedValue({
+        restaurant_feedback: { rating: 5, comment: 'Great!' }
+      })
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        const detailsButtons = screen.getAllByText('Details')
+        fireEvent.click(detailsButtons[0])
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Add Feedback')).toBeInTheDocument()
+      })
+    })
+
+    it('should not show feedback button when both feedbacks exist', async () => {
+      const deliveredOrder = { ...mockOrders[0], status: 'delivered' }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([deliveredOrder])
+      ;(api.getOrder as jest.Mock).mockResolvedValue(mockOrderDetails)
+      ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockResolvedValue({
+        restaurant_feedback: { rating: 5, comment: 'Great!' },
+        driver_feedback: { rating: 4, comment: 'Fast!' }
+      })
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        const detailsButtons = screen.getAllByText('Details')
+        fireEvent.click(detailsButtons[0])
+      })
+
+      await waitFor(() => {
+        expect(screen.queryByText('Feedback')).not.toBeInTheDocument()
+        expect(screen.queryByText('Add Feedback')).not.toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Pickup Code Display', () => {
+    it('should show pickup code for assigned orders', async () => {
+      const assignedOrder = { ...mockOrders[0], status: 'assigned' }
+      const detailsWithCode = {
+        ...mockOrderDetails,
+        order: { ...mockOrderDetails.order, delivery_code: '123456' }
+      }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([assignedOrder])
+      ;(api.getOrder as jest.Mock).mockResolvedValue(detailsWithCode)
+      ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockResolvedValue(null)
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        const detailsButtons = screen.getAllByText('Details')
+        fireEvent.click(detailsButtons[0])
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Pickup Code')).toBeInTheDocument()
+      })
+    })
+
+    it('should show pickup code for out-for-delivery orders', async () => {
+      const outForDeliveryOrder = { ...mockOrders[0], status: 'out-for-delivery' }
+      const detailsWithCode = {
+        ...mockOrderDetails,
+        order: { ...mockOrderDetails.order, delivery_code: '123456' }
+      }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([outForDeliveryOrder])
+      ;(api.getOrder as jest.Mock).mockResolvedValue(detailsWithCode)
+      ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockResolvedValue(null)
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        const detailsButtons = screen.getAllByText('Details')
+        fireEvent.click(detailsButtons[0])
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Pickup Code')).toBeInTheDocument()
+      })
+    })
+
+    it('should hide pickup code by default', async () => {
+      const assignedOrder = { ...mockOrders[0], status: 'assigned' }
+      const detailsWithCode = {
+        ...mockOrderDetails,
+        order: { ...mockOrderDetails.order, delivery_code: '123456' }
+      }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([assignedOrder])
+      ;(api.getOrder as jest.Mock).mockResolvedValue(detailsWithCode)
+      ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockResolvedValue(null)
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        const detailsButtons = screen.getAllByText('Details')
+        fireEvent.click(detailsButtons[0])
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('••••••')).toBeInTheDocument()
+      })
+    })
+
+    it('should toggle pickup code visibility', async () => {
+      const assignedOrder = { ...mockOrders[0], status: 'assigned' }
+      const detailsWithCode = {
+        ...mockOrderDetails,
+        order: { ...mockOrderDetails.order, delivery_code: '123456' }
+      }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([assignedOrder])
+      ;(api.getOrder as jest.Mock).mockResolvedValue(detailsWithCode)
+      ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockResolvedValue(null)
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        const detailsButtons = screen.getAllByText('Details')
+        fireEvent.click(detailsButtons[0])
+      })
+
+      await waitFor(() => {
+        const showButton = screen.getByText('Show')
+        fireEvent.click(showButton)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('123456')).toBeInTheDocument()
+      })
+
+      const hideButton = screen.getByText('Hide')
+      fireEvent.click(hideButton)
+
+      await waitFor(() => {
+        expect(screen.getByText('••••••')).toBeInTheDocument()
+      })
+    })
+
+    it('should not show pickup code for pending orders', async () => {
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([mockOrders[0]])
+      ;(api.getOrder as jest.Mock).mockResolvedValue(mockOrderDetails)
+      ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockResolvedValue(null)
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        const detailsButtons = screen.getAllByText('Details')
+        fireEvent.click(detailsButtons[0])
+      })
+
+      await waitFor(() => {
+        expect(screen.queryByText('Pickup Code')).not.toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Feedback Display', () => {
+    it('should display restaurant feedback when available', async () => {
+      const deliveredOrder = { ...mockOrders[0], status: 'delivered' }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([deliveredOrder])
+      ;(api.getOrder as jest.Mock).mockResolvedValue(mockOrderDetails)
+      ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockResolvedValue({
+        restaurant_feedback: { rating: 5, comment: 'Excellent food!' }
+      })
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        const detailsButtons = screen.getAllByText('Details')
+        fireEvent.click(detailsButtons[0])
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Your Feedback')).toBeInTheDocument()
+        expect(screen.getByText('Excellent food!')).toBeInTheDocument()
+      })
+    })
+
+    it('should display driver feedback when available', async () => {
+      const deliveredOrder = { ...mockOrders[0], status: 'delivered' }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([deliveredOrder])
+      ;(api.getOrder as jest.Mock).mockResolvedValue(mockOrderDetails)
+      ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockResolvedValue({
+        driver_feedback: { rating: 4, comment: 'Quick delivery!' }
+      })
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        const detailsButtons = screen.getAllByText('Details')
+        fireEvent.click(detailsButtons[0])
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Your Feedback')).toBeInTheDocument()
+        expect(screen.getByText('Quick delivery!')).toBeInTheDocument()
+      })
+    })
+
+    it('should display both feedbacks when available', async () => {
+      const deliveredOrder = { ...mockOrders[0], status: 'delivered' }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([deliveredOrder])
+      ;(api.getOrder as jest.Mock).mockResolvedValue(mockOrderDetails)
+      ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockResolvedValue({
+        restaurant_feedback: { rating: 5, comment: 'Great food!' },
+        driver_feedback: { rating: 4, comment: 'Fast service!' }
+      })
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        const detailsButtons = screen.getAllByText('Details')
+        fireEvent.click(detailsButtons[0])
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Great food!')).toBeInTheDocument()
+        expect(screen.getByText('Fast service!')).toBeInTheDocument()
+      })
+    })
+
+    it('should display star ratings for restaurant feedback', async () => {
+      const deliveredOrder = { ...mockOrders[0], status: 'delivered' }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([deliveredOrder])
+      ;(api.getOrder as jest.Mock).mockResolvedValue(mockOrderDetails)
+      ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockResolvedValue({
+        restaurant_feedback: { rating: 5, comment: 'Perfect!' }
+      })
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        const detailsButtons = screen.getAllByText('Details')
+        fireEvent.click(detailsButtons[0])
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('5/5')).toBeInTheDocument()
+      })
+    })
+
+    it('should not display feedback section when no feedback', async () => {
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([mockOrders[0]])
+      ;(api.getOrder as jest.Mock).mockResolvedValue(mockOrderDetails)
+      ;(api.getOrderStatus as jest.Mock).mockResolvedValue(mockOrderTimeline)
+      ;(api.getOrderFeedback as jest.Mock).mockResolvedValue(null)
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        const detailsButtons = screen.getAllByText('Details')
+        fireEvent.click(detailsButtons[0])
+      })
+
+      await waitFor(() => {
+        expect(screen.queryByText('Your Feedback')).not.toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Date Formatting', () => {
+    it('should format dates correctly', async () => {
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue(mockOrders)
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        const dates = screen.getAllByText(/Jan 01, 2024/)
+        expect(dates.length).toBeGreaterThan(0)
+      })
+    })
+
+    it('should handle invalid dates gracefully', async () => {
+      const orderWithInvalidDate = {
+        ...mockOrders[0],
+        created_at: 'invalid-date'
+      }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([orderWithInvalidDate])
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/invalid-date/)).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Order Status Variants', () => {
+    it('should display accepted status', async () => {
+      const acceptedOrder = { ...mockOrders[0], status: 'accepted' }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([acceptedOrder])
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Accepted')).toBeInTheDocument()
+      })
+    })
+
+    it('should display preparing status', async () => {
+      const preparingOrder = { ...mockOrders[0], status: 'preparing' }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([preparingOrder])
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Preparing')).toBeInTheDocument()
+      })
+    })
+
+    it('should display ready status', async () => {
+      const readyOrder = { ...mockOrders[0], status: 'ready' }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([readyOrder])
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Ready')).toBeInTheDocument()
+      })
+    })
+
+    it('should display out-for-delivery status', async () => {
+      const outForDeliveryOrder = { ...mockOrders[0], status: 'out-for-delivery' }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([outForDeliveryOrder])
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Out for Delivery')).toBeInTheDocument()
+      })
+    })
+
+    it('should display delivered status', async () => {
+      const deliveredOrder = { ...mockOrders[0], status: 'delivered' }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([deliveredOrder])
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Delivered')).toBeInTheDocument()
+      })
+    })
+
+    it('should display rejected status', async () => {
+      const rejectedOrder = { ...mockOrders[0], status: 'rejected' }
+      ;(api.getMyOrders as jest.Mock).mockResolvedValue([rejectedOrder])
+
+      render(<OrdersPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Rejected')).toBeInTheDocument()
+      })
+    })
+  })
 })
 
