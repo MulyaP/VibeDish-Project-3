@@ -584,6 +584,16 @@ export async function getOwnerAnalytics() {
   return response.json()
 }
 
+export async function getDriverAnalytics() {
+  const response = await authenticatedFetch(`${API_BASE_URL}/driver/analytics`)
+  
+  if (!response.ok) {
+    throw new Error("Failed to fetch driver analytics")
+  }
+  
+  return response.json()
+}
+
 // ==================== FEEDBACK API ====================
 
 /**
