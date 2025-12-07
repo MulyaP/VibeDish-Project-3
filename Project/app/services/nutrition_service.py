@@ -16,17 +16,20 @@ class NutritionService:
         if not self.client_id or not self.client_secret:
             return None
         
-        auth = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
-        
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                self.token_url,
-                headers={"Authorization": f"Basic {auth}"},
-                data={"grant_type": "client_credentials", "scope": "basic"},
-                timeout=10.0
-            )
-            if response.status_code == 200:
-                return response.json().get("access_token")
+        try:
+            auth = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    self.token_url,
+                    headers={"Authorization": f"Basic {auth}"},
+                    data={"grant_type": "client_credentials", "scope": "basic"},
+                    timeout=10.0
+                )
+                if response.status_code == 200:
+                    return response.json().get("access_token")
+        except Exception:
+            pass
         return None
     
     async def get_nutrition_data(self, food_name: str) -> Dict:
@@ -35,7 +38,6 @@ class NutritionService:
         if not token:
             result = self._get_estimated_nutrition(food_name)
             result["source"] = "estimate"
-            result["source_message"] = "Failed to get API token"
             return result
         
         # Try multiple search variations
@@ -68,16 +70,14 @@ class NutritionService:
                             food = foods[0] if isinstance(foods, list) else foods
                             result = self._format_nutrition_data(food, food_name)
                             result["source"] = "fatsecret_api"
-                            result["source_message"] = f"Matched: {food.get('food_name', food_name)}"
-                            result["food_url"] = food.get("food_url")
-                            result["food_type"] = food.get("food_type")
+                            if food.get("food_url"):
+                                result["food_url"] = food.get("food_url")
                             return result
             except Exception:
                 continue
         
         result = self._get_estimated_nutrition(food_name)
         result["source"] = "estimate"
-        result["source_message"] = "No API match found"
         return result
     
     def _format_nutrition_data(self, food: Dict, meal_name: str) -> Dict:
@@ -114,10 +114,7 @@ class NutritionService:
             "calories": round(nutrients.get("calories", 0)),
             "protein_g": round(nutrients.get("protein", 0), 1),
             "carbs_g": round(nutrients.get("carbs", 0), 1),
-            "fat_g": round(nutrients.get("fat", 0), 1),
-            "fiber_g": round(nutrients.get("fiber", 0), 1),
-            "sugar_g": round(nutrients.get("sugar", 0), 1),
-            "sodium_mg": round(nutrients.get("sodium", 0), 1)
+            "fat_g": round(nutrients.get("fat", 0), 1)
         }
     
     def _get_estimated_nutrition(self, meal_name: str) -> Dict:
@@ -125,18 +122,18 @@ class NutritionService:
         name_lower = meal_name.lower()
         
         if any(word in name_lower for word in ['salad', 'greens']):
-            return {"meal_name": meal_name, "calories": 150, "protein_g": 8.0, "carbs_g": 12.0, "fat_g": 9.0, "fiber_g": 4.0, "sugar_g": 6.0, "sodium_mg": 320.0}
+            return {"meal_name": meal_name, "calories": 150, "protein_g": 8.0, "carbs_g": 12.0, "fat_g": 9.0}
         elif any(word in name_lower for word in ['chicken', 'turkey']):
-            return {"meal_name": meal_name, "calories": 280, "protein_g": 35.0, "carbs_g": 8.0, "fat_g": 12.0, "fiber_g": 2.0, "sugar_g": 3.0, "sodium_mg": 450.0}
+            return {"meal_name": meal_name, "calories": 280, "protein_g": 35.0, "carbs_g": 8.0, "fat_g": 12.0}
         elif any(word in name_lower for word in ['beef', 'steak']):
-            return {"meal_name": meal_name, "calories": 350, "protein_g": 28.0, "carbs_g": 5.0, "fat_g": 24.0, "fiber_g": 1.0, "sugar_g": 2.0, "sodium_mg": 380.0}
+            return {"meal_name": meal_name, "calories": 350, "protein_g": 28.0, "carbs_g": 5.0, "fat_g": 24.0}
         elif any(word in name_lower for word in ['fish', 'salmon']):
-            return {"meal_name": meal_name, "calories": 220, "protein_g": 25.0, "carbs_g": 3.0, "fat_g": 12.0, "fiber_g": 0.5, "sugar_g": 1.0, "sodium_mg": 290.0}
+            return {"meal_name": meal_name, "calories": 220, "protein_g": 25.0, "carbs_g": 3.0, "fat_g": 12.0}
         elif any(word in name_lower for word in ['pasta', 'noodles']):
-            return {"meal_name": meal_name, "calories": 320, "protein_g": 12.0, "carbs_g": 58.0, "fat_g": 6.0, "fiber_g": 3.0, "sugar_g": 8.0, "sodium_mg": 420.0}
+            return {"meal_name": meal_name, "calories": 320, "protein_g": 12.0, "carbs_g": 58.0, "fat_g": 6.0}
         elif 'pizza' in name_lower:
-            return {"meal_name": meal_name, "calories": 285, "protein_g": 12.0, "carbs_g": 36.0, "fat_g": 10.0, "fiber_g": 2.5, "sugar_g": 4.0, "sodium_mg": 640.0}
+            return {"meal_name": meal_name, "calories": 285, "protein_g": 12.0, "carbs_g": 36.0, "fat_g": 10.0}
         elif 'soup' in name_lower:
-            return {"meal_name": meal_name, "calories": 180, "protein_g": 8.0, "carbs_g": 20.0, "fat_g": 7.0, "fiber_g": 3.0, "sugar_g": 5.0, "sodium_mg": 890.0}
+            return {"meal_name": meal_name, "calories": 180, "protein_g": 8.0, "carbs_g": 20.0, "fat_g": 7.0}
         else:
-            return {"meal_name": meal_name, "calories": 250, "protein_g": 15.0, "carbs_g": 25.0, "fat_g": 10.0, "fiber_g": 3.0, "sugar_g": 5.0, "sodium_mg": 400.0}
+            return {"meal_name": meal_name, "calories": 250, "protein_g": 15.0, "carbs_g": 25.0, "fat_g": 10.0}

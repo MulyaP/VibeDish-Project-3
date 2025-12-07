@@ -15,13 +15,8 @@ interface NutritionData {
   protein_g: number
   carbs_g: number
   fat_g: number
-  fiber_g: number
-  sugar_g: number
-  sodium_mg: number
   source?: string
-  source_message?: string
   food_url?: string
-  food_type?: string
   error?: string
 }
 
@@ -47,7 +42,7 @@ export function NutritionFacts({ mealId, mealName }: NutritionFactsProps) {
       setNutrition({ 
         meal_name: mealName, 
         error: 'Failed to load nutrition data',
-        calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sugar_g: 0, sodium_mg: 0
+        calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0
       })
     } finally {
       setLoading(false)
@@ -105,9 +100,6 @@ export function NutritionFacts({ mealId, mealName }: NutritionFactsProps) {
                 <NutrientRow label="Protein" value={nutrition.protein_g} unit="g" />
                 <NutrientRow label="Carbohydrates" value={nutrition.carbs_g} unit="g" />
                 <NutrientRow label="Fat" value={nutrition.fat_g} unit="g" />
-                <NutrientRow label="Fiber" value={nutrition.fiber_g} unit="g" />
-                <NutrientRow label="Sugar" value={nutrition.sugar_g} unit="g" />
-                <NutrientRow label="Sodium" value={nutrition.sodium_mg} unit="mg" />
               </div>
               
               <div className="pt-2 space-y-2">
@@ -116,9 +108,6 @@ export function NutritionFacts({ mealId, mealName }: NutritionFactsProps) {
                     <Badge variant="default" className="text-xs">
                       ✓ FatSecret API Data
                     </Badge>
-                    {nutrition.source_message && (
-                      <p className="text-xs text-muted-foreground">{nutrition.source_message}</p>
-                    )}
                     {nutrition.food_url && (
                       <a 
                         href={nutrition.food_url} 
@@ -131,14 +120,9 @@ export function NutritionFacts({ mealId, mealName }: NutritionFactsProps) {
                     )}
                   </>
                 ) : (
-                  <>
-                    <Badge variant="secondary" className="text-xs">
-                      ⚠ Estimated Data
-                    </Badge>
-                    {nutrition.source_message && (
-                      <p className="text-xs text-muted-foreground">{nutrition.source_message}</p>
-                    )}
-                  </>
+                  <Badge variant="secondary" className="text-xs">
+                    ⚠ Estimated Data
+                  </Badge>
                 )}
               </div>
             </CardContent>
