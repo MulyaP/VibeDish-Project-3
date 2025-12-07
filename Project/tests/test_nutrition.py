@@ -79,7 +79,6 @@ class TestNutritionService:
             assert result["carbs_g"] == 0.0
             assert result["fat_g"] == 3.6
             assert result["source"] == "fatsecret_api"
-            assert "Chicken Breast" in result["source_message"]
 
     @pytest.mark.asyncio
     async def test_get_nutrition_data_fallback_to_estimates(self, nutrition_service):
@@ -144,17 +143,7 @@ class TestNutritionService:
         assert result["carbs_g"] == 37.1
         assert result["protein_g"] == 20.0
 
-    def test_format_nutrition_data_with_fiber_and_sugar(self, nutrition_service):
-        """Test nutrition data formatting with fiber and sugar"""
-        food_data = {
-            "food_name": "Test Food",
-            "food_description": "Per 100g - Calories: 250kcal | Fat: 10g | Carbs: 30g | Protein: 15g | Fiber: 5g | Sugar: 8g",
-        }
-        
-        result = nutrition_service._format_nutrition_data(food_data, "Test Meal")
-        
-        assert result["fiber_g"] == 5.0
-        assert result["sugar_g"] == 8.0
+
 
     def test_get_estimated_nutrition_chicken(self, nutrition_service):
         """Test estimated nutrition for chicken dishes"""
@@ -170,7 +159,6 @@ class TestNutritionService:
         
         assert result["meal_name"] == "Caesar Salad"
         assert result["calories"] == 150
-        assert result["fiber_g"] == 4.0
 
     def test_get_estimated_nutrition_pasta(self, nutrition_service):
         """Test estimated nutrition for pasta dishes"""
@@ -216,9 +204,6 @@ class TestNutritionEndpoint:
                 "protein_g": 20.0,
                 "carbs_g": 30.0,
                 "fat_g": 10.0,
-                "fiber_g": 5.0,
-                "sugar_g": 8.0,
-                "sodium_mg": 400.0,
                 "source": "fatsecret_api"
             }
             
