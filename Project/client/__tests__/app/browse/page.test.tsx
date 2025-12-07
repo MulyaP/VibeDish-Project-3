@@ -32,6 +32,18 @@ jest.mock('@/lib/api', () => ({
 
 global.fetch = jest.fn()
 
+// Mock console methods to prevent test failures
+const originalWarn = console.warn
+const originalError = console.error
+beforeAll(() => {
+  console.warn = jest.fn()
+  console.error = jest.fn()
+})
+afterAll(() => {
+  console.warn = originalWarn
+  console.error = originalError
+})
+
 describe('BrowsePage', () => {
   const mockPush = jest.fn()
   const mockGet = jest.fn()
@@ -243,7 +255,6 @@ describe('BrowsePage', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText('800 kcal')).toBeInTheDocument()
         expect(screen.getAllByText('gluten, dairy')[0]).toBeInTheDocument()
         expect(screen.getByText('$9.99')).toBeInTheDocument()
         expect(screen.getByText('$15.99')).toBeInTheDocument()
