@@ -29,204 +29,386 @@
 [![FastAPI](https://img.shields.io/badge/framework-fastapi-009688)](https://fastapi.tiangolo.com/)
 
 
+# 🍽️ VibeDish - Mood-Based Food Delivery Platform
 
-# VibeDish🎵🍽️ — Eat Smart. Save Food. Feel Good.
+VibeDish is a comprehensive food delivery platform that combines mood-based recommendations with a complete order management system. The platform integrates Spotify listening history to analyze user mood and suggest personalized meal recommendations.
 
-## Overview
-**VibeDish** is a full-stack, AI-powered meal recommendation and ordering platform that connects **user moods from Spotify** to curated food suggestions from local restaurants. It also reduces food waste by connecting customers with surplus restaurant meals at discounted prices. This project demonstrates how rapidly teams can build intelligent applications using **FastAPI**, **Supabase**, **Next.js**, and **AI-driven recommender systems**.
+## 🌟 Key Features
 
-Deployed at: [Vercel and Render](https://vibedish.vercel.app/)
----
+### 🎵 Mood-Based Recommendations
+- **Spotify Integration**: Analyzes recent listening history to determine user mood
+- **AI-Powered Analysis**: Uses Groq AI to interpret music preferences and emotional states
+- **Smart Food Matching**: Recommends meals based on detected mood patterns
+- **Personalized Suggestions**: Considers user dietary preferences and restrictions
 
-## Intended Users
-- **General users** looking for personalized meal or surplus deals.  
-- **Restaurant partners** managing real-time surplus inventory.  
-- **Developers & students** exploring AI-assisted full-stack development and testing workflows.
+### 🛒 Complete Order Management
+- **Shopping Cart**: Add, update, and remove items with real-time inventory validation
+- **Multi-Step Checkout**: Address management, delivery fee calculation, and order placement
+- **Order Tracking**: Real-time status updates from placement to delivery
+- **Order History**: View past orders with detailed information
 
----
+### 🚗 Delivery System
+- **Driver Dashboard**: View available and active deliveries
+- **Route Optimization**: Mapbox integration for distance and duration calculations
+- **Delivery Code Verification**: Secure 6-digit code system for order completion
+- **Driver Analytics**: Track earnings, deliveries, and performance metrics
 
-## 🎯 About the Project
-VibeDish is an innovative food delivery platform that combines mood-based recommendations with sustainability. By analyzing your Spotify listening history, we recommend surplus restaurant meals that match your current mood, helping reduce food waste while delivering food that resonates with your vibe.
+### 🏪 Restaurant Owner Portal
+- **Menu Management**: Create, update, and delete meals with image uploads
+- **Order Management**: Accept, prepare, and mark orders ready for delivery
+- **Restaurant Profile**: Manage restaurant information and settings
+- **Order Analytics**: View order history and statistics
 
-**Key Objectives:**
-- Reduce food waste by connecting users with surplus restaurant meals  
-- Provide personalized meal recommendations based on mood analysis  
-- Create a sustainable and community-driven food delivery ecosystem  
-- Offer discounted prices on surplus meals  
+### 📊 Nutrition Information
+- **FatSecret API Integration**: Real-time nutrition data for meals
+- **Detailed Breakdown**: Calories, protein, carbs, and fat content
+- **Fallback Estimates**: Smart estimates when API data unavailable
+- **Serving Size Information**: Clear portion details
 
----
+### ⭐ Feedback System
+- **Restaurant Ratings**: Rate food quality and service
+- **Driver Ratings**: Evaluate delivery experience
+- **Review System**: Leave detailed feedback for orders
+- **One-Time Submission**: Prevents duplicate feedback
 
-## 🛠 Tech Stack
-### Backend
-- **Framework:** FastAPI (Python 3.10+)  
-- **Database:** Supabase PostgreSQL  
-- **ORM:** SQLAlchemy 2.0 with Alembic migrations  
-- **Authentication:** Supabase Auth + JWT  
-- **AI Module:** Groq API for music to mood analysis  
-- **Music Integration:** Spotify API  
+## 🏗️ Architecture
 
-### Frontend
-- **Framework:** Next.js (TypeScript + Tailwind)  
-- **UI Components:** shadcn/ui  
-- **Maps:** Mapbox GL  
-- **Authentication:** Supabase Auth  
+### Backend (FastAPI)
+```
+app/
+├── routers/           # API endpoints
+│   ├── auth_routes.py      # Authentication & authorization
+│   ├── cart.py             # Shopping cart operations
+│   ├── orders.py           # Order management
+│   ├── delivery_routes.py  # Delivery operations
+│   ├── driver_analytics.py # Driver performance metrics
+│   ├── feedback.py         # Rating & review system
+│   ├── chat.py             # AI chatbot endpoints
+│   ├── catalog.py          # Browse meals & restaurants
+│   └── owner_orders.py     # Restaurant owner operations
+├── services/          # Business logic
+│   ├── chat_service.py     # Groq AI integration
+│   ├── chat_persistence.py # Chat history management
+│   └── nutrition_service.py # FatSecret API integration
+├── owner_meals/       # Restaurant owner features
+│   ├── restaurant.py       # Restaurant management
+│   └── service.py          # Menu operations
+└── Mood2FoodRecSys/   # Recommendation engine
+    ├── Spotify_Auth.py     # Spotify OAuth
+    ├── RecSys.py           # Recommendation API
+    └── RecSysFunctions.py  # Mood analysis logic
+```
 
-### Services
-- **Realtime:** Supabase Realtime  
-- **Deployment:** Vercel · Render  
-- **Testing:** Pytest · Jest  
+### Frontend (Next.js 16)
+```
+client/app/
+├── browse/            # Browse restaurants & meals
+├── cart/              # Shopping cart page
+├── orders/            # Order history & tracking
+├── chat/              # AI chatbot interface
+├── driver/            # Driver dashboard & analytics
+├── owner/             # Restaurant owner portal
+├── profile/           # User profile management
+├── recommendations/   # Mood-based suggestions
+└── support/           # Customer support
+```
 
----
+## 🚀 Getting Started
 
-## Quick Start
+### Prerequisites
+- Python 3.9+
+- Node.js 18+
+- PostgreSQL (via Supabase)
+- Spotify Developer Account
+- Mapbox API Token
+- Groq API Key
+- FatSecret API Credentials (optional)
+
+### Backend Setup
+
+1. **Clone the repository**
 ```bash
-# clone repository
-git clone https://github.com/pranshavpatel/CSC510-Section2-Group8.git
 cd Project
+```
 
-# create virtual environment
-python -m venv venv
-source venv/bin/activate
-
-# install backend dependencies
+2. **Install Python dependencies**
+```bash
 pip install -r requirements.txt
+```
 
-# configure environment
-Write and file .env file
+3. **Configure environment variables**
+Create a `.env` file:
+```env
+# Supabase
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_key
 
-# start backend
-uvicorn app.main:app --reload
+# JWT
+JWT_SECRET=your_jwt_secret
+JWT_ALGORITHM=HS256
 
-# start frontend
+# Spotify
+SPOTIFY_CLIENT_ID=your_spotify_client_id
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+SPOTIFY_REDIRECT_URI=http://localhost:8000/spotify/callback
+
+# Groq AI
+GROQ_API_KEY=your_groq_api_key
+
+# Mapbox
+MAPBOX_TOKEN=your_mapbox_token
+
+# FatSecret (optional)
+FATSECRET_CLIENT_ID=your_fatsecret_client_id
+FATSECRET_CLIENT_SECRET=your_fatsecret_client_secret
+
+# AWS S3 (for image uploads)
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+AWS_REGION=your_aws_region
+S3_BUCKET_NAME=your_bucket_name
+```
+
+4. **Run database migrations**
+```bash
+alembic upgrade head
+```
+
+5. **Start the backend server**
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+### Frontend Setup
+
+1. **Navigate to client directory**
+```bash
 cd client
+```
+
+2. **Install dependencies**
+```bash
 npm install
+```
+
+3. **Configure environment variables**
+Create a `.env.local` file:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_token
+```
+
+4. **Start the development server**
+```bash
 npm run dev
 ```
-Backend → http://localhost:8000
 
-Frontend → http://localhost:3000  
+5. **Access the application**
+Open [http://localhost:3000](http://localhost:3000)
 
----
+## 🧪 Testing
 
-## ✨ Features
-- Supabase-based Authentication with local JWT fallback  
-- Mood-to-Food LLM Recommender based on current playing music  
-- Spotify Integration for Mood Analysis   
-- Real-time Cart & Order System with surplus pricing  
-- Restaurant & Meal Catalog  
-- Restaurant Owner Dashboard  
-- Surplus Meal Browsing  
-- Shopping Cart with Multi-Item Support  
-- Order Management & Tracking  
-- Sustainability Metrics Tracking  
-- Discord Support Channel for users and developers  
-- 100+ tests covering nominal & off-nominal cases  
+### Backend Tests
 
----
+**Comprehensive test coverage: 86%+ across all modules**
 
-## 🧪 Testing and Code Coverage
 ```bash
+# Run all tests
 pytest tests/ -v
-pytest tests/ --cov=Mood2FoodRecSys --cov=app/routers --cov-report=html --cov-report=term
-pytest tests/test_performance.py -v -s
-pytest tests/test_security.py -v -s
-cd client && npm test
+
+# Run with coverage report
+pytest tests/ --cov=app --cov-report=html --cov-report=term
+
+# Run specific test suites
+pytest tests/test_routers.py -v                    # Core functionality (33 tests)
+pytest tests/test_routers_edge_cases.py -v         # Edge cases (44 tests)
+pytest tests/test_true_e2e_order_flow.py -v        # E2E order flow (12 tests)
+pytest tests/test_recsys.py -v                     # Recommendation system
+pytest tests/test_chat.py -v                       # Chatbot functionality
+pytest tests/test_nutrition.py -v                  # Nutrition service
+
+# View HTML coverage report
+open htmlcov/index.html
 ```
-Coverage: Backend 84%, Frontend 86.25%, Total 559 tests.
 
----
+### Frontend Tests
 
-## 🗺️ Project Roadmap
-| Timeline | Milestone |
-|-----------|------------|
-| 1 month | Async Spotify API via httpx + Refined LLM workflow |
-| 2 months | Restaurant analytics dashboard + stock prediction |
-| 4 months | PWA mobile release + Conversational ordering agent |
-
-**Future Enhancements**
-- Carbon footprint tracking per order  
-- Dietary preference learning  
-- Social recommendations based on friend activity  
-- Sustainability leaderboard and rewards  
-
----
-
-## 📚 Documentation
-- **User Guide:** Step-by-step usage & troubleshooting  
-- **Developer Guide:** Schema, routes, integration patterns  
-- **API Docs:** [Swagger UI](http://localhost:8000/docs) | [ReDoc](http://localhost:8000/redoc)  
-
----
-
-## 🚀 Deployment
-### Frontend (Vercel)
 ```bash
 cd client
-vercel --prod
+
+# Run all tests
+npm test
+
+# Run with coverage
+npm test -- --coverage
+
+# Watch mode
+npm run test:watch
 ```
 
-### Backend (Render)
-- Deploys from main branch automatically  
-- Configure env variables in Render dashboard  
+### Test Reports
+- **Router Tests**: 77/77 passing (100%)
+- **E2E Tests**: 12/12 passing (100%)
+- **Recommendation System**: 95/99 passing (96%)
+- **Overall Coverage**: 86%+
 
----
+See detailed reports:
+- `tests/COMPREHENSIVE_TEST_REPORT.md`
+- `tests/E2E_TEST_FINAL_REPORT.md`
+- `coverage/COVERAGE_REPORT.md`
+
+## 📡 API Documentation
+
+### Authentication
+- `POST /auth/signup` - Register new user
+- `POST /auth/login` - User login
+- `POST /auth/refresh` - Refresh access token
+
+### Catalog & Browse
+- `GET /catalog` - Browse restaurants
+- `GET /meals` - List all meals
+- `GET /meals/{meal_id}` - Get meal details
+
+### Cart Operations
+- `GET /cart` - Get current cart
+- `POST /cart/items` - Add item to cart
+- `PATCH /cart/items/{item_id}` - Update cart item
+- `DELETE /cart/items/{item_id}` - Remove from cart
+- `POST /cart/checkout` - Place order
+
+### Order Management
+- `GET /orders` - List user orders
+- `GET /orders/{order_id}` - Get order details
+- `PATCH /orders/{order_id}/cancel` - Cancel order
+- `PATCH /orders/{order_id}/accept` - Accept order (staff)
+- `PATCH /orders/{order_id}/preparing` - Mark preparing (staff)
+- `PATCH /orders/{order_id}/ready` - Mark ready (staff)
+
+### Delivery
+- `GET /deliveries/ready` - List available deliveries
+- `GET /deliveries/active` - Get active deliveries
+- `PATCH /deliveries/{order_id}/accept` - Accept delivery
+- `PATCH /deliveries/{order_id}/picked-up` - Mark picked up
+- `PATCH /deliveries/{order_id}/deliver` - Complete delivery
+
+### Driver Analytics
+- `GET /driver/analytics` - Get driver performance metrics
+
+### Feedback
+- `POST /orders/{order_id}/feedback` - Submit feedback
+- `GET /orders/{order_id}/feedback` - Get order feedback
+
+### Chat
+- `POST /chat/messages` - Send message to AI
+- `GET /chat/history` - Get chat history
+- `GET /chat/sessions` - List chat sessions
+- `POST /chat/sessions` - Create new session
+- `DELETE /chat/sessions/{session_id}` - Delete session
+
+### Recommendations
+- `POST /recsys/get_recommendations` - Get mood-based recommendations
+- `GET /spotify/auth` - Initiate Spotify OAuth
+- `GET /spotify/callback` - Spotify OAuth callback
+
+### Restaurant Owner
+- `POST /owner/meals` - Create meal
+- `PATCH /owner/meals/{meal_id}` - Update meal
+- `DELETE /owner/meals/{meal_id}` - Delete meal
+- `GET /owner/orders` - List restaurant orders
+- `GET /owner/restaurant` - Get restaurant info
+
+## 🔑 Key Technologies
+
+### Backend
+- **FastAPI** - Modern Python web framework
+- **Supabase** - PostgreSQL database & authentication
+- **SQLAlchemy** - ORM for database operations
+- **Groq AI** - LLM for chatbot and mood analysis
+- **Spotipy** - Spotify API integration
+- **Boto3** - AWS S3 for image storage
+- **HTTPX** - Async HTTP client
+- **Pytest** - Testing framework
+
+### Frontend
+- **Next.js 16** - React framework with App Router
+- **TypeScript** - Type-safe JavaScript
+- **Tailwind CSS** - Utility-first CSS framework
+- **Radix UI** - Accessible component primitives
+- **Mapbox GL** - Interactive maps
+- **React Hook Form** - Form management
+- **Zod** - Schema validation
+- **Jest** - Testing framework
+
+### External APIs
+- **Spotify Web API** - Music listening history
+- **Mapbox API** - Routing and geocoding
+- **FatSecret API** - Nutrition information
+- **Groq API** - AI language model
+
+## 👥 User Roles
+
+### Customer
+- Browse restaurants and meals
+- Get mood-based recommendations
+- Add items to cart and checkout
+- Track order status
+- Chat with AI assistant
+- Submit feedback and ratings
+
+### Restaurant Staff
+- Manage menu items
+- Accept and process orders
+- Update order status
+- View order history
+- Upload meal images
+
+### Delivery Driver
+- View available deliveries
+- Accept delivery assignments
+- Update delivery status
+- Track earnings and analytics
+- View delivery history
+
+## 🔒 Security Features
+
+- **JWT Authentication** - Secure token-based auth
+- **Role-Based Access Control** - Endpoint protection by user role
+- **Password Hashing** - Bcrypt for secure password storage
+- **Delivery Code Verification** - 6-digit codes for order completion
+- **Session Management** - Secure chat session ownership
+- **Input Validation** - Pydantic models for request validation
+
+## 📈 Performance & Scalability
+
+- **Async Operations** - Non-blocking I/O for better performance
+- **Database Indexing** - Optimized queries with proper indexes
+- **Caching Strategy** - Reduced API calls with smart caching
+- **Batch Processing** - Efficient Mapbox matrix API usage
+- **Connection Pooling** - Optimized database connections
+
+
+## 📝 Documentation
+
+- **API Docs**: Visit `/docs` when running the backend
+- **Test Reports**: See `tests/` directory for detailed test documentation
+- **Migration Guide**: `MIGRATION_GUIDE.md` for database changes
+- **ORM Setup**: `ORM_SETUP.md` for database configuration
 
 ## 🤝 Contributing
-We welcome pull requests!  
-Refer to `CONTRIBUTING.md` for coding standards, PR workflow, and governance model.
 
----
+This is a student project developed as part of a Software Engineering course. The team has implemented:
 
-## 👥 Team
-**Course:** CSC 510: Software Engineering  
-**Institution:** NC State University  
-
-**Team Members:**
-- Pranshav Patel - ppatel49@ncsu.edu  
-- Namit Patel - npatel44@ncsu.edu  
-- Janam Patel - jpatel46@ncsu.edu  
-- Vivek Vanera - vvanera@ncsu.edu  
-
----
-
-## 📞 Support & Community
-Join our Discord for help, feedback, and collaboration:  
-[https://discord.gg/u73Dqj5dsV](https://discord.gg/u73Dqj5dsV)
-
-If you encounter any issues:
-1. Check documentation  
-2. Open an [issue](https://github.com/pranshavpatel/CSC510-Section2-Group8/issues)  
-3. Contact the team  
-
----
-
-## 🧾 Funding Statement
-Developed as a passion project and academic requirement.  
-If funded, future goals include:
-- AWS Fargate + Supabase Pro deployment  
-- Multi-platform AI recommendation expansion  
-- Paid open-source fellowships for contributors  
-
----
+- **Order Management System** - Complete order lifecycle
+- **Delivery System** - Driver operations and route optimization
+- **Recommendation Engine** - Spotify-based mood analysis
+- **AI Chatbot** - Customer support automation
+- **Nutrition Integration** - Health-conscious meal information
+- **Comprehensive Testing** - 86%+ code coverage
 
 ## 📄 License
-Licensed under the MIT License — see `LICENSE` for details.
+
+This project is developed for educational purposes as part of a university course.
 
 ---
 
-## 📜 Citation
-```bibtex
-@software{VibeDish_2025,
-  author  = {Patel, Pranshav; Patel, Namit; Vanera, Vivek and Patel, Janam},
-  title   = {VibeDish: AI-Assisted Food Recommendation System},
-  year    = {2025},
-  url     = {https://github.com/pranshavpatel/CSC510-Section2-Group8}
-}
-```
-
----
-
-*Reducing food waste, one mood at a time.* 🎵🍽️🌱
-  year    = {2025},
-  url     = {https://github.com/pranshavpatel/CSC510-Section2-Group8}
-}
+**Built with ❤️ by the VibeDish Team**
